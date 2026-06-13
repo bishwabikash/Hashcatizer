@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+    tags:
+      - "v*.*.*"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            binary: hashcatizer
+            archive: hashcatizer-linux-x86_64.tar.gz
+            cc: musl-gcc
+          - os: macos-15
+            target: aarch64-apple-darwin
+            binary: hashcatizer
+            archive: hashcatizer-macos-aarch64.tar.gz
+            cc: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: hashcatizer.exe
+            archive: hashcatizer-windows-x86_64.zip
+            cc: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Set C compiler for musl (Linux)
+        if: matrix.cc != ''
+        run: echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Smoke test (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          BIN=./target/${{ matrix.target }}/release/${{ matrix.binary }}
+          $BIN --help
+          COUNT=$($BIN --list 2>/dev/null | grep -c "^  ")
+          echo "Converters listed: $COUNT"
+          [ "$COUNT" -ge 80 ] || (echo "Converter count too low" && exit 1)
+
+      - name: Smoke test (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $bin = ".\target\${{ matrix.target }}\release\${{ matrix.binary }}"
+          & $bin --help
+          $count = (& $bin --list 2>$null | Select-String "^  ").Count
+          Write-Host "Converters listed: $count"
+          if ($count -lt 80) { Write-Error "Converter count too low"; exit 1 }
+
+      - name: Build .deb package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb --no-build --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/debian/hashcatizer_*.deb hashcatizer-linux-x86_64.deb
+
+      - name: Upload .deb artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hashcatizer-linux-x86_64.deb
+          path: hashcatizer-linux-x86_64.deb
+
+      - name: Package binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: tar -czf ${{ matrix.archive }} -C target/${{ matrix.target }}/release ${{ matrix.binary }}
+
+      - name: Package binary (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: Compress-Archive -Path "target\${{ matrix.target }}\release\${{ matrix.binary }}" -DestinationPath "${{ matrix.archive }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+  release:
+    name: Publish GitHub Release
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Hashcatizer ${{ github.ref_name }}
+          body: |
+            ## Hashcatizer ${{ github.ref_name }}
+
+            Pre-built static binaries for Linux (musl), macOS, and Windows x86_64. Also includes a `.deb` for Debian/Ubuntu/Kali.
+
+            ### Quick start
+
+            ```bash
+            # Debian / Ubuntu / Kali (recommended)
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/hashcatizer-linux-x86_64.deb
+            sudo dpkg -i hashcatizer-linux-x86_64.deb
+
+            # Linux (tarball)
+            tar -xzf hashcatizer-linux-x86_64.tar.gz
+            chmod +x hashcatizer && sudo mv hashcatizer /usr/local/bin/
+
+            # Usage
+            hashcatizer --list
+            hashcatizer <file>
+            hashcatizer <converter> <file>
+            hashcatizer '<hash_string>'
+            ```
+
+            See [README](https://github.com/${{ github.repository }}#readme) for full documentation.
+          files: dist/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
