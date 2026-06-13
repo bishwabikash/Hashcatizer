@@ -1,0 +1,56 @@
+[package]
+name = "hashcatizer"
+version = "1.0.1"
+edition = "2021"
+description = "Blazing-fast hashcatizer — converts encrypted files to hashcat-compatible format"
+authors = ["Hashcatizer Contributors"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/bishwabikash/Hashcatizer"
+homepage = "https://github.com/bishwabikash/Hashcatizer"
+documentation = "https://github.com/bishwabikash/Hashcatizer#readme"
+keywords = ["hashcat", "password", "cracking", "forensics", "security"]
+categories = ["command-line-utilities", "cryptography"]
+exclude = [".github/*", "test_debug.rs", "*.tar.gz", "*.deb"]
+
+[[bin]]
+name = "hashcatizer"
+path = "src/main.rs"
+
+[dependencies]
+clap             = { version = "4", features = ["derive"] }
+serde            = { version = "1", features = ["derive"] }
+serde_json       = "1"
+hex              = "0.4"
+base64           = "0.22"
+quick-xml        = "0.36"
+plist            = "1"
+rusqlite         = { version = "0.31", features = ["bundled"] }
+aes              = "0.8"
+cbc              = "0.1"
+cipher           = "0.4"
+regex            = "1"
+once_cell        = "1"
+cfb              = "0.10"
+
+[package.metadata.deb]
+maintainer = "Hashcatizer Contributors"
+copyright = "2026, Hashcatizer Contributors"
+license-file = ["LICENSE-MIT"]
+extended-description = "Single static binary that extracts hashes from 92 encrypted file formats (SSH keys, KeePass, PDF, ZIP/RAR/GPG, crypto wallets, disk images, and more) and outputs them ready to crack with hashcat."
+depends = ""
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/hashcatizer", "usr/bin/hashcatizer", "755"],
+    ["README.md", "usr/share/doc/hashcatizer/README.md", "644"],
+    ["LICENSE-MIT", "usr/share/doc/hashcatizer/LICENSE-MIT", "644"],
+    ["LICENSE-APACHE", "usr/share/doc/hashcatizer/LICENSE-APACHE", "644"],
+]
+
+[profile.release]
+opt-level      = 3
+lto            = true
+codegen-units  = 1
+panic          = "abort"
+strip          = true

@@ -1,0 +1,22 @@
+# Rust
+/target/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+htmlcov/
+
+# Distribution
+*.tar.gz
+*.whl
+*.deb
+
+# Scratch
+test_debug.rs
