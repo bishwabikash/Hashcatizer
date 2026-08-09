@@ -18,6 +18,11 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
     if data.len() < IV_LEN + MIN_BODY + TAG_LEN {
         return None;
     }
+    // GCM ciphertext is indistinguishable from random; requiring that rules
+    // out the plaintext files this previously claimed.
+    if !crate::common::looks_encrypted(data.get(IV_LEN..)?, 7.0) {
+        return None;
+    }
     let iv = data.get(..IV_LEN)?;
     let ciphertext = data.get(IV_LEN..data.len() - TAG_LEN)?;
     let tag = data.get(data.len() - TAG_LEN..)?;
