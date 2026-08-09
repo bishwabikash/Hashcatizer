@@ -121,12 +121,17 @@ Implemented against the JtR reference but without a local fixture to diff
 against: `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
 `keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`, `dashlane`,
 `enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`, `ejabberd`,
-`ikescan`, `netntlm`, `known_hosts`, `radius`.
+`ikescan`, `netntlm`, `known_hosts`, `radius`, `hccapx`, `openbsd_softraid`,
+`lotus`, `strip`, `atmail`, `network`, `kdcdump`.
 
-> **Status:** not every converter is finished. Thirteen still return a
-> fixed-length hex dump rather than a parsed hash — `vdi`, `bestcrypt`,
-> `coinomi`, `dpapimk`, `hccapx`, `openbsd_softraid`, `pfx`, `staroffice`,
-> `strip`, `lotus`, `atmail`, `network`, `fvde` — those produce well-formed
+Note that `truecrypt`, `veracrypt`, `dashlane`, `enpass`, `andotp` and `strip`
+accept any input by design: their headers are fully encrypted with no magic
+bytes, so content-based identification is impossible. They are excluded from
+auto-detect and must be selected explicitly.
+
+> **Status:** six converters still return a fixed-length hex dump rather than
+> a parsed hash — `vdi`, `bestcrypt`, `coinomi`, `dpapimk`, `fvde`,
+> `staroffice`. Their output is well-formed but **will not crack** — those produce well-formed
 > output that **will not crack**. A converter is only trustworthy once it
 > appears in the verified list above. Contributions welcome; follow the
 > differential-testing workflow rather than eyeballing the output.
