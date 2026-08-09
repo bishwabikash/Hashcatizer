@@ -25,8 +25,13 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
     if data.len() < SALT_LEN {
         return None;
     }
-    let salt = data.get(..SALT_LEN)?;
     let body = data.get(SALT_LEN..)?;
+    // Everything after the salt is AES output (optionally behind a KWC3 marker).
+    let probe = body.strip_prefix(KWC3).unwrap_or(body);
+    if !crate::common::looks_encrypted(probe, 7.0) {
+        return None;
+    }
+    let salt = data.get(..SALT_LEN)?;
 
     // The KWC3 marker means the plaintext is compressed; the cracker needs to
     // know that, and the marker itself is not part of the ciphertext.

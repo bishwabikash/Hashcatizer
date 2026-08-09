@@ -145,3 +145,44 @@ pub fn read_compact_size(data: &[u8], offset: usize) -> Option<(u64, usize)> {
         }
     }
 }
+
+/// Shannon entropy in bits per byte.
+pub fn shannon_entropy(data: &[u8]) -> f64 {
+    if data.is_empty() {
+        return 0.0;
+    }
+    let mut counts = [0usize; 256];
+    for &b in data {
+        counts[b as usize] += 1;
+    }
+    let len = data.len() as f64;
+    counts
+        .iter()
+        .filter(|&&c| c > 0)
+        .map(|&c| {
+            let p = c as f64 / len;
+            -p * p.log2()
+        })
+        .sum()
+}
+
+/// Whether a buffer plausibly holds ciphertext.
+///
+/// Formats whose headers are fully encrypted (TrueCrypt, VeraCrypt, SQLCipher
+/// databases, AES-GCM backups) carry no magic bytes, so this is the only
+/// content-based signal available. It is not proof of format -- nothing can be
+/// -- but ciphertext is near-uniform at ~7.99 bits/byte while text, source code
+/// and structured binaries sit far below, so it removes essentially every
+/// accidental match.
+///
+/// `min_entropy` is per-format: use ~7.0 for whole encrypted headers and lower
+/// where the sample includes plaintext framing.
+pub fn looks_encrypted(data: &[u8], min_entropy: f64) -> bool {
+    // Too small a sample makes the estimate meaningless: a 32-byte buffer
+    // cannot exceed 5 bits/byte even if perfectly random.
+    if data.len() < 256 {
+        return false;
+    }
+    // An all-zero or single-byte-repeated run scores 0 and is caught here too.
+    shannon_entropy(data) >= min_entropy
+}

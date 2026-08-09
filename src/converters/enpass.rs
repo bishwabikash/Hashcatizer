@@ -22,6 +22,12 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
         return None;
     }
     let head = data.get(..PREFIX_LEN)?;
+    // A SQLCipher database is a whole number of pages and everything after the
+    // 16-byte salt is ciphertext, so entropy over the first page rules out the
+    // text and config files that used to match here.
+    if data.len() % 512 != 0 || !crate::common::looks_encrypted(&head[16..], 7.0) {
+        return None;
+    }
 
     Some(vec![format!(
         "$enpass${}${}${}",
