@@ -1,5 +1,3 @@
-use crate::common::to_hex;
-
 // Android ADB backups (adb backup) -> hashcat -m 18900.
 //
 //   $ab$<version>*<cipher>*<rounds>*<user_salt>*<ck_salt>*<user_iv>*<masterkey_blob>
@@ -41,14 +39,8 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
 
 fn hex_field(line: &str) -> Option<String> {
     let v = line.trim();
-    if v.is_empty() || v.len() % 2 != 0 || !v.chars().all(|c| c.is_ascii_hexdigit()) {
+    if v.is_empty() || !v.len().is_multiple_of(2) || !v.chars().all(|c| c.is_ascii_hexdigit()) {
         return None;
     }
     Some(v.to_ascii_lowercase())
-}
-
-/// Kept for callers that already hold raw bytes.
-#[allow(dead_code)]
-pub fn hex(data: &[u8]) -> String {
-    to_hex(data)
 }
