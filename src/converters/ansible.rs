@@ -1,4 +1,3 @@
-use crate::common::to_hex;
 
 pub fn convert(data: &[u8], _filename: &str) -> Option<Vec<String>> {
     if !data.starts_with(b"$ANSIBLE_VAULT") {
@@ -17,8 +16,14 @@ pub fn convert(data: &[u8], _filename: &str) -> Option<Vec<String>> {
     if parts2.len() < 3 {
         return None;
     }
-    let salt = to_hex(parts2[0]);
-    let checksum = to_hex(parts2[1]);
-    let ciphertext = to_hex(parts2[2]);
+    // The vault body is hex-encoded ASCII whose three lines are *themselves*
+    // hex strings, so they go out verbatim — hex-encoding them again would
+    // double-encode the salt and ciphertext.
+    let salt = std::str::from_utf8(parts2[0]).ok()?.trim();
+    let checksum = std::str::from_utf8(parts2[1]).ok()?.trim();
+    let ciphertext = std::str::from_utf8(parts2[2]).ok()?.trim();
+    if !(salt.chars().all(|c| c.is_ascii_hexdigit()) && !salt.is_empty()) {
+        return None;
+    }
     Some(vec![format!("$ansible$0*0*{}*{}*{}", salt, ciphertext, checksum)])
 }

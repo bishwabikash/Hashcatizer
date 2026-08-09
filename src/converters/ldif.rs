@@ -57,7 +57,7 @@ fn parse_literal_password(val: &str, user: &str) -> Option<String> {
 
 fn extract_uid(dn_line: &str) -> Option<String> {
     // dn: uid=jsmith, ou=...
-    let rest = dn_line.splitn(2, ':').nth(1)?.trim();
+    let rest = dn_line.split_once(':')?.1.trim();
     for part in rest.split(',') {
         let kv: Vec<&str> = part.trim().splitn(2, '=').collect();
         if kv.len() == 2 && (kv[0].eq_ignore_ascii_case("uid") || kv[0].eq_ignore_ascii_case("cn")) {

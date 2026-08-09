@@ -20,3 +20,7 @@ htmlcov/
 
 # Scratch
 test_debug.rs
+
+# Differential-test oracles (GPL, fetched on demand by tools/fetch_jtr.sh)
+/.jtr-oracle/
+/fixtures/

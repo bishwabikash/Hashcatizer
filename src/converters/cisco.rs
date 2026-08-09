@@ -46,8 +46,8 @@ fn extract_cisco_hash(line: &str) -> Option<String> {
     }
     // enable / username secrets (passthrough)
     for prefix in &["enable secret ", "enable password "] {
-        if line.starts_with(prefix) {
-            let rest = line[prefix.len()..].trim();
+        if let Some(rest) = line.strip_prefix(prefix) {
+            let rest = rest.trim();
             if rest.starts_with('$') {
                 return Some(rest.to_string());
             }

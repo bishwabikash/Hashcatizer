@@ -1,8 +1,8 @@
 # Hashcatizer 🔓
 
-[![CI](https://github.com/nobody-Justheader/Hashcatizer/actions/workflows/ci.yml/badge.svg)](https://github.com/nobody-Justheader/Hashcatizer/actions/workflows/ci.yml)
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nobody-Justheader/Hashcatizer?utm_source=oss&utm_medium=github&utm_campaign=nobody-Justheader%2FHashcatizer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
-[![License](https://img.shields.io/github/license/nobody-Justheader/Hashcatizer)](LICENSE)
+[![CI](https://github.com/bishwabikash/Hashcatizer/actions/workflows/ci.yml/badge.svg)](https://github.com/bishwabikash/Hashcatizer/actions/workflows/ci.yml)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/bishwabikash/Hashcatizer?utm_source=oss&utm_medium=github&utm_campaign=bishwabikash%2FHashcatizer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+[![License](https://img.shields.io/github/license/bishwabikash/Hashcatizer)](LICENSE)
 
 **File-to-Hashcat Converter Suite** — Extract hashes from encrypted files and output them in [hashcat](https://hashcat.net/hashcat/)-compatible format. Written in Rust for maximum speed.
 
@@ -38,11 +38,11 @@ Download the latest release for your platform from the [Releases page](../../rel
 
 ```bash
 # Debian / Ubuntu / Kali (recommended)
-curl -LO https://github.com/nobody-Justheader/Hashcatizer/releases/latest/download/hashcatizer-linux-x86_64.deb
+curl -LO https://github.com/bishwabikash/Hashcatizer/releases/latest/download/hashcatizer-linux-x86_64.deb
 sudo dpkg -i hashcatizer-linux-x86_64.deb
 
 # Linux (musl static tarball)
-curl -Lo hashcatizer-linux-x86_64.tar.gz https://github.com/nobody-Justheader/Hashcatizer/releases/latest/download/hashcatizer-linux-x86_64.tar.gz
+curl -Lo hashcatizer-linux-x86_64.tar.gz https://github.com/bishwabikash/Hashcatizer/releases/latest/download/hashcatizer-linux-x86_64.tar.gz
 tar -xzf hashcatizer-linux-x86_64.tar.gz
 chmod +x hashcatizer
 sudo mv hashcatizer /usr/local/bin/
@@ -53,7 +53,7 @@ sudo mv hashcatizer /usr/local/bin/
 Requires [Rust](https://rustup.rs/) 1.75+.
 
 ```bash
-git clone https://github.com/nobody-Justheader/Hashcatizer.git
+git clone https://github.com/bishwabikash/Hashcatizer.git
 cd Hashcatizer
 cargo build --release
 # Binary: target/release/hashcatizer
@@ -100,31 +100,61 @@ hashcatizer '$2a$12$LlMILsdbh1gAdLhWBXWzXu...'
 
 ---
 
+## Correctness
+
+Formats here were reverse-engineered by the John the Ripper project, so JtR's
+`*2john` extractors are the reference implementation. `tools/difftest.sh`
+generates real encrypted fixtures and compares our output against them
+**byte for byte** — the strongest correctness signal available without a GPU.
+
+```bash
+cargo build --release
+tools/fetch_jtr.sh                  # pulls the *2john extractors (GPL, not vendored)
+tools/make_fixtures.sh fixtures     # generates real encrypted test files
+tools/difftest.sh fixtures
+```
+
+Verified byte-identical to JtR: `7z` (5 archive layouts), `ssh` (PEM + all
+OpenSSH key types), `zip`, `gpg`, `ansible`, `openssl`, `pem`, `sipdump`.
+
+> **Status:** not every converter is finished. Roughly a third still return a
+> fixed-length hex dump rather than a parsed hash — those produce well-formed
+> output that **will not crack**. A converter is only trustworthy once it
+> appears in the verified list above. Contributions welcome; follow the
+> differential-testing workflow rather than eyeballing the output.
+
+Mode numbers in the table below were checked against
+`hashcat --example-hashes` (v7.1.2). Entries marked `— (john)` are real formats
+that hashcat has no kernel for; the tool tells you so at runtime rather than
+printing a `-m` that cannot work.
+
+---
+
 ## Supported Formats (92 Converters)
 
 | Converter | Hashcat Mode(s) | Description |
 |---|---|---|
-| `ssh` | 22911–22941 | SSH private keys (RSA/DSA/EC/OpenSSH) |
+| `ssh` | 22911–22951 | SSH private keys. **Modern OpenSSH bcrypt keys are john-only** — hashcat has no kernel for them |
 | `pdf` | 10400–10700 | PDF 1.1–2.0 |
 | `office` | 9400–9800 | MS Office 97–2013+ |
 | `keepass` | 13400 | KeePass 1.x / 2.x |
 | `bitlocker` | 22100 | BitLocker volumes |
-| `truecrypt` | 6211–6243 | TrueCrypt volumes |
-| `veracrypt` | 13711–13743 | VeraCrypt volumes |
+| `truecrypt` | 29311–29343 | TrueCrypt volumes (legacy: 6211–6243) |
+| `veracrypt` | 29411–29483 | VeraCrypt volumes (legacy: 13711–13783) |
 | `luks` | 14600 | LUKS encrypted volumes |
 | `ethereum` | 15600, 15700 | Ethereum wallets (scrypt / pbkdf2) |
 | `bitcoin` | 11300 | Bitcoin / Litecoin wallet.dat |
 | `electrum` | 16600 | Electrum wallets |
 | `blockchain` | 15200 | Blockchain.com wallets |
 | `ansible` | 16900 | Ansible Vault |
-| `bitwarden` | 26400 | Bitwarden |
+| `bitwarden` | 23400 | Bitwarden |
 | `lastpass` | 6800 | LastPass |
 | `1password` | 8200 | 1Password vaults |
 | `pwsafe` | 5200 | Password Safe v3 |
 | `encfs` | 6211–6221 | EncFS |
 | `dmg` | 12700 | Apple DMG encrypted images |
 | `mozilla` | 16600 | Firefox / Thunderbird key3/key4.db |
-| `telegram` | 22301 | Telegram Desktop |
+| `telegram` | 22600/24500 | Telegram Desktop (22301 = mobile passcode) |
 | `signal` | 25300 | Signal Desktop / Android |
 | `7z` | 11600 | 7-Zip archives |
 | `zip` | 13600 | WinZip AES-encrypted ZIP |
@@ -143,57 +173,57 @@ hashcatizer '$2a$12$LlMILsdbh1gAdLhWBXWzXu...'
 | `ldif` | various | LDAP LDIF hashes |
 | `mongodb` | 24100, 24200 | MongoDB SCRAM-SHA-1/256 |
 | `ios` | 14800 | iOS / iTunes backup encryption |
-| `vdi` | 13711–13733 | VirtualBox VDI encryption |
+| `vdi` | 27500/27600 | VirtualBox disk encryption |
 | `androidbackup` | 18900 | Android ADB backup |
 | `androidfde` | 12900 | Android Full-Disk Encryption |
 | `axcrypt` | 13200 | AxCrypt |
-| `bestcrypt` | 23400 | BestCrypt containers |
-| `cardano` | 28500 | Cardano wallets |
+| `bestcrypt` | 23900/24000 | BestCrypt v3/v4 volumes |
+| `cardano` | — (john) | Cardano wallets |
 | `coinomi` | — | Coinomi wallets |
 | `dashlane` | — | Dashlane vaults |
-| `deepsound` | 24310 | DeepSound audio steganography |
-| `diskcryptor` | 22500 | DiskCryptor volumes |
+| `deepsound` | — (john) | DeepSound audio steganography |
+| `diskcryptor` | 20011–20013 | DiskCryptor volumes |
 | `dpapimk` | 15300, 15900 | Windows DPAPI Master Keys |
 | `ecryptfs` | 12200 | eCryptfs |
-| `enpass` | 24600 | Enpass |
+| `enpass` | — (john) | Enpass |
 | `fvde` | 16700 | FileVault 2 / Core Storage |
-| `geli` | 16800 | FreeBSD GELI |
-| `htdigest` | — | Apache htdigest |
+| `geli` | — (john) | FreeBSD GELI |
+| `htdigest` | — (john) | Apache htdigest |
 | `hccapx` | 22000 | WPA2 HCCAPX |
-| `iwork` | 9600 | Apple iWork (Pages/Numbers/Keynote) |
+| `iwork` | 23300 | Apple iWork (Pages/Numbers/Keynote) |
 | `keychain` | 23100 | macOS Keychain |
 | `keyring` | — | GNOME Keyring |
-| `known_hosts` | — | SSH known_hosts (hashed) |
+| `known_hosts` | — (john) | SSH known_hosts (hashed) |
 | `libreoffice` | 18400 | LibreOffice / ODF documents |
-| `monero` | 26620 | Monero wallets |
-| `multibit` | 22200 | MultiBit wallets |
+| `monero` | — (john) | Monero wallets |
+| `multibit` | 22500/27700 | MultiBit wallets |
 | `openbsd_softraid` | — | OpenBSD softraid crypto |
-| `openssl` | 500 | OpenSSL `enc` (Salted__) |
-| `pem` | — | Encrypted PEM private keys |
-| `pfx` | 24410 | PKCS#12 / PFX |
-| `restic` | 24410 | Restic repos |
-| `staroffice` | 18400 | StarOffice / OOo documents |
-| `strip` | 24420 | Strip password manager |
-| `tezos` | 28510 | Tezos wallets |
+| `openssl` | — (john) | OpenSSL `enc` (Salted__) |
+| `pem` | 24410/24420 | Encrypted PKCS#8 private keys |
+| `pfx` | — (john) | PKCS#12 / PFX |
+| `restic` | — (john) | Restic repos |
+| `staroffice` | — (john) | StarOffice / OOo documents |
+| `strip` | — (john) | Strip password manager |
+| `tezos` | — (john) | Tezos wallets |
 | `vmx` | 17300 | VMware VMX encryption |
 | `aix` | — | AIX password hashes |
 | `andotp` | — | andOTP backups |
 | `applenotes` | — | Apple Notes (encrypted) |
 | `bks` | — | Bouncy Castle BKS keystore |
 | `ccache` | — | Kerberos ccache |
-| `ejabberd` | — | ejabberd SCRAM hashes |
+| `ejabberd` | 23200 | ejabberd SCRAM hashes |
 | `gitea` | — | Gitea password hashes |
-| `ikescan` | — | ike-scan IKE PSK hashes |
+| `ikescan` | 5300/5400 | ike-scan IKE PSK hashes |
 | `kdcdump` | — | KDC key dump |
-| `keystore` | — | Java KeyStore (JKS) |
+| `keystore` | 15500 | Java KeyStore (JKS) |
 | `keplr` | — | Keplr wallet |
-| `kirbi` | — | Kerberos tickets (kirbi) |
+| `kirbi` | 13100 | Kerberos tickets (kirbi) |
 | `krb` | — | Kerberos hashes |
 | `kwallet` | — | KDE KWallet |
 | `lotus` | — | Lotus Notes ID files |
-| `prosody` | — | Prosody XMPP SCRAM hashes |
+| `prosody` | 23200 | Prosody XMPP SCRAM hashes |
 | `radius` | — | RADIUS hashes |
-| `sipdump` | — | SIP digest auth |
+| `sipdump` | 11400 | SIP digest auth |
 
 ---
 
