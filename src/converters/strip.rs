@@ -19,7 +19,7 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
     // A SQLCipher database is a whole number of pages and everything after the
     // 16-byte salt is ciphertext, so entropy over the first page rules out the
     // text and config files that used to match here.
-    if data.len() % 512 != 0 || !crate::common::looks_encrypted(&head[16..], 7.0) {
+    if !data.len().is_multiple_of(512) || !crate::common::looks_encrypted(&head[16..], 7.0) {
         return None;
     }
     Some(vec![format!("$strip$*{}", to_hex(head))])

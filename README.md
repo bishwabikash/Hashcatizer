@@ -122,7 +122,8 @@ against: `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
 `keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`, `dashlane`,
 `enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`, `ejabberd`,
 `ikescan`, `netntlm`, `known_hosts`, `radius`, `hccapx`, `openbsd_softraid`,
-`lotus`, `strip`, `atmail`, `network`, `kdcdump`.
+`lotus`, `strip`, `atmail`, `network`, `kdcdump`, `vdi`, `fvde`, `coinomi`,
+`dpapimk`, `keychain`, `multibit`.
 
 Formats whose headers are fully encrypted (`truecrypt`, `veracrypt`, `enpass`,
 `strip`, `andotp`, `dashlane`, `diskcryptor`) carry no magic bytes, so they are
@@ -132,9 +133,9 @@ to 1/5 against the decoy corpus. The residual case is uniform random input,
 which genuinely is indistinguishable from an encrypted header; they remain out
 of the auto-detect sweep for that reason.
 
-> **Status:** four converters still return a fixed-length hex dump rather than
-> a parsed hash — `bestcrypt`, `coinomi`, `fvde`, `staroffice`. Their output is
-> well-formed but **will not crack** — those produce well-formed
+> **Status:** two converters still return a fixed-length hex dump rather than
+> a parsed hash — `bestcrypt` and `staroffice`. Their output is well-formed but
+> **will not crack** — those produce well-formed
 > output that **will not crack**. A converter is only trustworthy once it
 > appears in the verified list above. Contributions welcome; follow the
 > differential-testing workflow rather than eyeballing the output.
