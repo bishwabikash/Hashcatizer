@@ -27,7 +27,15 @@ handle legacy PEM keys with the MD5-based KDF.
   reference implementation plus test vectors to check against
 - Needs: a new mode, a bcrypt-pbkdf kernel (bcrypt rounds + SHA-512), and a
   parser that distinguishes the 8-token form from the 6-token one
-- Effort: substantial — bcrypt-pbkdf is a real kernel, not a parser tweak
+- Effort: substantial — bcrypt-pbkdf is a real kernel, not a parser tweak.
+  The Blowfish core already exists in `OpenCL/inc_cipher_blowfish.cl` and
+  `m03200-pure.cl`, so the new work is the SHA-512 glue and the outer loop.
+- **Full design: [HASHCAT_SSH_BCRYPT_MODE.md](HASHCAT_SSH_BCRYPT_MODE.md)**
+
+> The v7 Assimilation Bridge (`-m 74000` Rust, `-m 72000/73000` Python) can
+> express this algorithm in a handful of lines, but it executes on CPU only.
+> It is the right tool for generating and checking test vectors against a GPU
+> kernel under development — not for cracking.
 
 ### 2. `$PEM$2` verbose form — smallest possible PR
 
