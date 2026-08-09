@@ -4,6 +4,7 @@ use std::process;
 mod common;
 mod der;
 mod detect;
+mod protobuf;
 mod converters;
 
 // Hashcat mode hints, verified against `hashcat --example-hashes` (v7.1.2).

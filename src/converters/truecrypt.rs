@@ -26,7 +26,7 @@ pub fn headers(data: &[u8], prefix: &str) -> Option<Vec<String>> {
     // 512-byte sectors and its header is ciphertext. Neither test identifies
     // the format on its own; together they reject essentially everything that
     // is not an encrypted container.
-    if data.len() < HEADER_SIZE || data.len() % HEADER_SIZE != 0 {
+    if data.len() < HEADER_SIZE || !data.len().is_multiple_of(HEADER_SIZE) {
         return None;
     }
     if !crate::common::looks_encrypted(data.get(..HEADER_SIZE)?, 7.0) {
