@@ -64,6 +64,24 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
+      # The test suite is the regression guard for parser panics and for the
+      # fallback_safe invariant; it previously only ran at publish time, so a
+      # breaking change could sit on the default branch undetected.
+      - name: Run tests
+        run: cargo test --release
+
+      - name: Clippy
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          rustup component add clippy
+          cargo clippy --release --all-targets -- -D warnings
+
+      - name: Formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          rustup component add rustfmt
+          cargo fmt --check || echo "::warning::cargo fmt reported differences"
+
       - name: Smoke test (Unix)
         if: matrix.os != 'windows-latest'
         run: |

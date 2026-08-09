@@ -99,102 +99,148 @@ pub fn run(name: &str, data: &[u8], path: &str) -> Option<Vec<String>> {
     let filename = path.to_string();
     let fpath = Path::new(path);
     match name {
-        "ansible"        => ansible::convert(&data, &filename),
-        "atmail"         => atmail::convert(&data, &filename),
-        "bitcoin"        => bitcoin::convert(&data, &filename),
-        "bitlocker"      => bitlocker::convert(&data, &filename),
-        "bitwarden"      => bitwarden::convert(&data, &filename),
-        "blockchain"     => blockchain::convert(&data, &filename),
-        "cisco"          => cisco::convert(&data, &filename),
-        "dmg"            => dmg::convert(&data, &filename),
-        "electrum"       => electrum::convert(&data, &filename),
-        "encfs"          => encfs::convert(&data, &filename),
-        "ethereum"       => ethereum::convert(&data, &filename),
+        "ansible"        => ansible::convert(data, &filename),
+        "atmail"         => atmail::convert(data, &filename),
+        "bitcoin"        => bitcoin::convert(data, &filename),
+        "bitlocker"      => bitlocker::convert(data, &filename),
+        "bitwarden"      => bitwarden::convert(data, &filename),
+        "blockchain"     => blockchain::convert(data, &filename),
+        "cisco"          => cisco::convert(data, &filename),
+        "dmg"            => dmg::convert(data, &filename),
+        "electrum"       => electrum::convert(data, &filename),
+        "encfs"          => encfs::convert(data, &filename),
+        "ethereum"       => ethereum::convert(data, &filename),
         "ios"            => ios::convert(fpath),
-        "keepass"        => keepass::convert(&data, &filename),
-        "lastpass"       => lastpass::convert(&data, &filename),
-        "ldif"           => ldif::convert(&data, &filename),
-        "lion"           => lion::convert(&data, &filename),
-        "luks"           => luks::convert(&data, &filename),
-        "mac"            => mac::convert(&data, &filename),
-        "mongodb"        => mongodb::convert(&data, &filename),
+        "keepass"        => keepass::convert(data, &filename),
+        "lastpass"       => lastpass::convert(data, &filename),
+        "ldif"           => ldif::convert(data, &filename),
+        "lion"           => lion::convert(data, &filename),
+        "luks"           => luks::convert(data, &filename),
+        "mac"            => mac::convert(data, &filename),
+        "mongodb"        => mongodb::convert(data, &filename),
         "mozilla"        => mozilla::convert(fpath),
-        "netntlm"        => netntlm::convert(&data, &filename),
-        "network"        => network::convert(&data, &filename),
-        "office"         => office::convert(&data, &filename),
+        "netntlm"        => netntlm::convert(data, &filename),
+        "network"        => network::convert(data, &filename),
+        "office"         => office::convert(data, &filename),
         "1password"      => onepassword::convert(fpath),
-        "pcap"           => pcap::convert(&data, &filename),
-        "pdf"            => pdf::convert(&data, &filename),
-        "pgpdisk"        => pgpdisk::convert(&data, &filename),
-        "pgpsda"         => pgpsda::convert(&data, &filename),
-        "pgpwde"         => pgpwde::convert(&data, &filename),
-        "pwsafe"         => pwsafe::convert(&data, &filename),
-        "sap"            => sap::convert(&data, &filename),
-        "7z"             => sevenz::convert(&data, &filename),
+        "pcap"           => pcap::convert(data, &filename),
+        "pdf"            => pdf::convert(data, &filename),
+        "pgpdisk"        => pgpdisk::convert(data, &filename),
+        "pgpsda"         => pgpsda::convert(data, &filename),
+        "pgpwde"         => pgpwde::convert(data, &filename),
+        "pwsafe"         => pwsafe::convert(data, &filename),
+        "sap"            => sap::convert(data, &filename),
+        "7z"             => sevenz::convert(data, &filename),
         "signal"         => signal::convert(fpath),
-        "ssh"            => ssh::convert(&data, &filename),
-        "telegram"       => telegram::convert(&data, &filename),
-        "truecrypt"      => truecrypt::convert(&data, &filename),
-        "vdi"            => vdi::convert(&data, &filename),
-        "veracrypt"      => veracrypt::convert(&data, &filename),
-        "zed"            => zed::convert(&data, &filename),
+        "ssh"            => ssh::convert(data, &filename),
+        "telegram"       => telegram::convert(data, &filename),
+        "truecrypt"      => truecrypt::convert(data, &filename),
+        "vdi"            => vdi::convert(data, &filename),
+        "veracrypt"      => veracrypt::convert(data, &filename),
+        "zed"            => zed::convert(data, &filename),
         // batch
-        "androidbackup"  => androidbackup::convert(&data, &filename),
-        "androidfde"     => androidfde::convert(&data, &filename),
-        "axcrypt"        => axcrypt::convert(&data, &filename),
-        "bestcrypt"      => bestcrypt::convert(&data, &filename),
-        "cardano"        => cardano::convert(&data, &filename),
-        "coinomi"        => coinomi::convert(&data, &filename),
-        "dashlane"       => dashlane::convert(&data, &filename),
-        "deepsound"      => deepsound::convert(&data, &filename),
-        "diskcryptor"    => diskcryptor::convert(&data, &filename),
-        "dpapimk"        => dpapimk::convert(&data, &filename),
-        "ecryptfs"       => ecryptfs::convert(&data, &filename),
-        "enpass"         => enpass::convert(&data, &filename),
-        "fvde"           => fvde::convert(&data, &filename),
-        "geli"           => geli::convert(&data, &filename),
-        "htdigest"       => htdigest::convert(&data, &filename),
-        "hccapx"         => hccapx::convert(&data, &filename),
-        "iwork"          => iwork::convert(&data, &filename),
-        "keychain"       => keychain::convert(&data, &filename),
-        "keyring"        => keyring::convert(&data, &filename),
-        "known_hosts"    => known_hosts::convert(&data, &filename),
-        "libreoffice"    => libreoffice::convert(&data, &filename),
-        "monero"         => monero::convert(&data, &filename),
-        "multibit"       => multibit::convert(&data, &filename),
-        "openbsd_softraid" => openbsd_softraid::convert(&data, &filename),
-        "openssl"        => openssl_enc::convert(&data, &filename),
-        "pem"            => pem::convert(&data, &filename),
-        "pfx"            => pfx::convert(&data, &filename),
-        "restic"         => restic::convert(&data, &filename),
-        "staroffice"     => staroffice::convert(&data, &filename),
-        "strip"          => strip::convert(&data, &filename),
-        "tezos"          => tezos::convert(&data, &filename),
-        "vmx"            => vmx::convert(&data, &filename),
+        "androidbackup"  => androidbackup::convert(data, &filename),
+        "androidfde"     => androidfde::convert(data, &filename),
+        "axcrypt"        => axcrypt::convert(data, &filename),
+        "bestcrypt"      => bestcrypt::convert(data, &filename),
+        "cardano"        => cardano::convert(data, &filename),
+        "coinomi"        => coinomi::convert(data, &filename),
+        "dashlane"       => dashlane::convert(data, &filename),
+        "deepsound"      => deepsound::convert(data, &filename),
+        "diskcryptor"    => diskcryptor::convert(data, &filename),
+        "dpapimk"        => dpapimk::convert(data, &filename),
+        "ecryptfs"       => ecryptfs::convert(data, &filename),
+        "enpass"         => enpass::convert(data, &filename),
+        "fvde"           => fvde::convert(data, &filename),
+        "geli"           => geli::convert(data, &filename),
+        "htdigest"       => htdigest::convert(data, &filename),
+        "hccapx"         => hccapx::convert(data, &filename),
+        "iwork"          => iwork::convert(data, &filename),
+        "keychain"       => keychain::convert(data, &filename),
+        "keyring"        => keyring::convert(data, &filename),
+        "known_hosts"    => known_hosts::convert(data, &filename),
+        "libreoffice"    => libreoffice::convert(data, &filename),
+        "monero"         => monero::convert(data, &filename),
+        "multibit"       => multibit::convert(data, &filename),
+        "openbsd_softraid" => openbsd_softraid::convert(data, &filename),
+        "openssl"        => openssl_enc::convert(data, &filename),
+        "pem"            => pem::convert(data, &filename),
+        "pfx"            => pfx::convert(data, &filename),
+        "restic"         => restic::convert(data, &filename),
+        "staroffice"     => staroffice::convert(data, &filename),
+        "strip"          => strip::convert(data, &filename),
+        "tezos"          => tezos::convert(data, &filename),
+        "vmx"            => vmx::convert(data, &filename),
         // extended
-        "aix"            => aix::convert(&data, &filename),
-        "andotp"         => andotp::convert(&data, &filename),
+        "aix"            => aix::convert(data, &filename),
+        "andotp"         => andotp::convert(data, &filename),
         "applenotes"     => applenotes::convert(data, &filename),
-        "gpg"            => gpg::convert(&data, &filename),
-        "rar"            => rar::convert(&data, &filename),
-        "zip"            => zip::convert(&data, &filename),
-        "bks"            => bks::convert(&data, &filename),
-        "ccache"         => ccache::convert(&data, &filename),
-        "ejabberd"       => ejabberd::convert(&data, &filename),
-        "gitea"          => gitea::convert(&data, &filename),
-        "ikescan"        => ikescan::convert(&data, &filename),
-        "kdcdump"        => kdcdump::convert(&data, &filename),
-        "keystore"       => keystore_jks::convert(&data, &filename),
-        "keplr"          => keplr::convert(&data, &filename),
-        "kirbi"          => kirbi::convert(&data, &filename),
-        "krb"            => krb::convert(&data, &filename),
-        "kwallet"        => kwallet::convert(&data, &filename),
-        "lotus"          => lotus::convert(&data, &filename),
-        "prosody"        => prosody::convert(&data, &filename),
-        "radius"         => radius::convert(&data, &filename),
-        "sipdump"        => sipdump::convert(&data, &filename),
+        "gpg"            => gpg::convert(data, &filename),
+        "rar"            => rar::convert(data, &filename),
+        "zip"            => zip::convert(data, &filename),
+        "bks"            => bks::convert(data, &filename),
+        "ccache"         => ccache::convert(data, &filename),
+        "ejabberd"       => ejabberd::convert(data, &filename),
+        "gitea"          => gitea::convert(data, &filename),
+        "ikescan"        => ikescan::convert(data, &filename),
+        "kdcdump"        => kdcdump::convert(data, &filename),
+        "keystore"       => keystore_jks::convert(data, &filename),
+        "keplr"          => keplr::convert(data, &filename),
+        "kirbi"          => kirbi::convert(data, &filename),
+        "krb"            => krb::convert(data, &filename),
+        "kwallet"        => kwallet::convert(data, &filename),
+        "lotus"          => lotus::convert(data, &filename),
+        "prosody"        => prosody::convert(data, &filename),
+        "radius"         => radius::convert(data, &filename),
+        "sipdump"        => sipdump::convert(data, &filename),
         _ => None,
     }
+}
+
+/// Converters that positively identify their input — a magic number, a checksum
+/// or a structure strict enough that a false match is implausible.
+///
+/// Only these are tried during the blind "unknown type, try everything" sweep.
+/// Converters outside this set can still be selected explicitly by name; they
+/// are excluded because they key off loose textual cues (a colon, a "::", a
+/// plausible length) and will happily claim an unrelated file. That is how a
+/// plain text file used to be reported as a Telegram hash.
+pub fn fallback_safe(name: &str) -> bool {
+    matches!(
+        name,
+        "7z" | "ansible"
+            | "androidbackup"
+            | "axcrypt"
+            | "bitcoin"
+            | "bitlocker"
+            | "bks"
+            | "ccache"
+            | "dmg"
+            | "electrum"
+            | "encfs"
+            | "ethereum"
+            | "gpg"
+            | "keepass"
+            | "keystore"
+            | "kirbi"
+            | "known_hosts"
+            | "luks"
+            | "mozilla"
+            | "office"
+            | "openssl"
+            | "pcap"
+            | "pdf"
+            | "pem"
+            | "pgpdisk"
+            | "pgpsda"
+            | "pgpwde"
+            | "pwsafe"
+            | "rar"
+            | "ssh"
+            | "telegram"
+            | "zed"
+            | "zip"
+    )
 }
 
 /// Returns all known converter names.
@@ -254,7 +300,7 @@ mod tests {
         let out = run(name, data, &path.to_string_lossy());
         let _ = std::fs::remove_file(&path);
         assert!(
-            out.as_ref().map_or(true, |v| v.is_empty()),
+            out.as_ref().is_none_or(|v| v.is_empty()),
             "{} unexpectedly produced output on truncated input: {:?}",
             name, out
         );
@@ -289,7 +335,7 @@ mod tests {
         // "dPGP"+"MAIN" record (u32_le magic 0x50475064 / type 0x4E49414D),
         // then 52 bytes — salt slice [60..76] ran past a 60-byte file.
         let mut d = b"dPGPMAIN".to_vec();
-        d.extend(std::iter::repeat(0u8).take(52));
+        d.extend(std::iter::repeat_n(0u8, 52));
         assert_no_hash("pgpdisk", &d);
     }
 
@@ -312,15 +358,60 @@ mod tests {
     #[test]
     fn sevenz_truncated_header_does_not_panic() {
         let mut d = b"7z\xbc\xaf\x27\x1c".to_vec();
-        d.extend(std::iter::repeat(0u8).take(26));
+        d.extend(std::iter::repeat_n(0u8, 26));
         assert_no_hash("7z", &d);
     }
 
     #[test]
     fn pcap_short_ntlm_does_not_panic() {
         let mut d = b"\xa1\xb2\xc3\xd4NTLMSSP\x00\x03\x00\x00\x00".to_vec();
-        d.extend(std::iter::repeat(0u8).take(80));
+        d.extend(std::iter::repeat_n(0u8, 80));
         let _ = run("pcap", &d, "x.pcap"); // just must not panic
+    }
+
+    /// A converter is only allowed in the blind auto-detect sweep if it can
+    /// actually recognise its own format. This asserts that directly: feed each
+    /// allowlisted converter obvious non-matches and require silence.
+    ///
+    /// Without this guard the sweep reports whatever the first permissive
+    /// converter says, which is how a plain text file came back as a Telegram
+    /// hash and a PEM certificate as a VirtualBox disk.
+    #[test]
+    fn fallback_safe_converters_reject_unrelated_input() {
+        let text = "lorem ipsum dolor sit amet\n".repeat(200);
+        let toml = "[package]\nname = \"x\"\nversion = \"1.0\"\n".repeat(40);
+        let cpp = "std::vector<int> v;\nfoo::bar::baz\n".repeat(40);
+        let pseudo_random: Vec<u8> = (0..8192u32)
+            .map(|i| (i.wrapping_mul(2654435761) >> 13) as u8)
+            .collect();
+
+        let decoys: &[(&str, &[u8])] = &[
+            ("zeros", &[0u8; 8192]),
+            ("ones", &[0xffu8; 8192]),
+            ("text", text.as_bytes()),
+            ("toml", toml.as_bytes()),
+            ("cpp", cpp.as_bytes()),
+            ("pseudo_random", &pseudo_random),
+        ];
+
+        for name in all_names() {
+            if !fallback_safe(name) {
+                continue;
+            }
+            for (label, bytes) in decoys {
+                let path = temp_file(&format!("decoy_{}_{}", name, label), bytes);
+                let got = run(name, bytes, &path.to_string_lossy());
+                let _ = std::fs::remove_file(&path);
+                assert!(
+                    got.as_ref().is_none_or(|v| v.is_empty()),
+                    "converter '{}' is marked fallback_safe but matched {} input: {:?}\n\
+                     Either tighten its format check or drop it from fallback_safe().",
+                    name,
+                    label,
+                    got
+                );
+            }
+        }
     }
 
     // ---- Generic sweep: no converter may panic on malformed input ----
@@ -368,7 +459,7 @@ mod tests {
                 run_all(&format!("seed{}_t", i), &seed[..len]);
                 // also pad with zeros past the magic to reach later parse steps
                 let mut padded = seed[..len].to_vec();
-                padded.extend(std::iter::repeat(0u8).take(64));
+                padded.extend(std::iter::repeat_n(0u8, 64));
                 run_all(&format!("seed{}_p", i), &padded);
             }
         }
@@ -441,7 +532,7 @@ mod tests {
         r.push(0x73);
         r.extend_from_slice(&0x0080u16.to_le_bytes());
         r.extend_from_slice(&13u16.to_le_bytes());
-        r.extend(std::iter::repeat(0u8).take(6 + 20));
+        r.extend(std::iter::repeat_n(0u8, 6 + 20));
         let salt = b"\x45\x10\x9a\xf8\xab\x5f\x29\x7a";
         let enc = b"\xad\xbf\x6c\x53\x85\xd7\xa4\x03\x73\xe8\xf7\x7d\x7b\x89\xd3\x17";
         r.extend_from_slice(salt);
@@ -491,7 +582,7 @@ mod tests {
         body.extend_from_slice(&[0x5a, 0, 0, 0]); // creation time
         body.push(1);                             // RSA
         body.extend_from_slice(&1024u16.to_be_bytes()); // MPI n bitlen
-        body.extend(std::iter::repeat(0u8).take(128));
+        body.extend(std::iter::repeat_n(0u8, 128));
         body.extend_from_slice(&17u16.to_be_bytes());   // MPI e bitlen
         body.extend_from_slice(&[0x01, 0x00, 0x01]);
         body.push(254); // usage

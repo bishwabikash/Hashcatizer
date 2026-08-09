@@ -26,8 +26,8 @@ fn parse_json(j: &serde_json::Value) -> Option<Vec<String>> {
         return Some(vec![format!("$electrum$3*{}", to_hex(&raw))]);
     }
     // Encrypted seed (v4)
-    if j.get("seed_version").is_some() {
-        if j.get("use_encryption").and_then(|v| v.as_bool()).unwrap_or(false) {
+    if j.get("seed_version").is_some()
+        && j.get("use_encryption").and_then(|v| v.as_bool()).unwrap_or(false) {
             for key in &["seed", "master_private_keys", "keypairs"] {
                 if let Some(ct) = j.get(key).and_then(|v| v.as_str()) {
                     if let Ok(raw) = b64_decode(ct) {
@@ -36,6 +36,5 @@ fn parse_json(j: &serde_json::Value) -> Option<Vec<String>> {
                 }
             }
         }
-    }
     None
 }
