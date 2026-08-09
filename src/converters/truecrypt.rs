@@ -22,6 +22,17 @@ pub fn convert(data: &[u8], _filename: &str) -> Option<Vec<String>> {
 /// Shared with the VeraCrypt converter, which differs only in its prefix and
 /// the PBKDF2 iteration counts the cracker applies.
 pub fn headers(data: &[u8], prefix: &str) -> Option<Vec<String>> {
+    // The header carries no magic, but a real volume is a whole number of
+    // 512-byte sectors and its header is ciphertext. Neither test identifies
+    // the format on its own; together they reject essentially everything that
+    // is not an encrypted container.
+    if data.len() < HEADER_SIZE || data.len() % HEADER_SIZE != 0 {
+        return None;
+    }
+    if !crate::common::looks_encrypted(data.get(..HEADER_SIZE)?, 7.0) {
+        return None;
+    }
+
     let mut out = Vec::new();
 
     if let Some(primary) = data.get(..HEADER_SIZE) {

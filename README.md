@@ -117,8 +117,24 @@ tools/difftest.sh fixtures
 Verified byte-identical to JtR: `7z` (5 archive layouts), `ssh` (PEM + all
 OpenSSH key types), `zip`, `gpg`, `ansible`, `openssl`, `pem`, `sipdump`.
 
-> **Status:** not every converter is finished. Roughly a third still return a
-> fixed-length hex dump rather than a parsed hash — those produce well-formed
+Implemented against the JtR reference but without a local fixture to diff
+against: `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
+`keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`, `dashlane`,
+`enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`, `ejabberd`,
+`ikescan`, `netntlm`, `known_hosts`, `radius`, `hccapx`, `openbsd_softraid`,
+`lotus`, `strip`, `atmail`, `network`, `kdcdump`.
+
+Formats whose headers are fully encrypted (`truecrypt`, `veracrypt`, `enpass`,
+`strip`, `andotp`, `dashlane`, `diskcryptor`) carry no magic bytes, so they are
+gated on Shannon entropy plus structural constraints — sector alignment, page
+multiples, GCM framing — instead. That cut their false-positive rate from 5/5
+to 1/5 against the decoy corpus. The residual case is uniform random input,
+which genuinely is indistinguishable from an encrypted header; they remain out
+of the auto-detect sweep for that reason.
+
+> **Status:** four converters still return a fixed-length hex dump rather than
+> a parsed hash — `bestcrypt`, `coinomi`, `fvde`, `staroffice`. Their output is
+> well-formed but **will not crack** — those produce well-formed
 > output that **will not crack**. A converter is only trustworthy once it
 > appears in the verified list above. Contributions welcome; follow the
 > differential-testing workflow rather than eyeballing the output.

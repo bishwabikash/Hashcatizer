@@ -1,21 +1,34 @@
 use crate::common::to_hex;
 
-pub fn convert(data: &[u8], path: &str) -> Option<Vec<String>> {
-    let ext = std::path::Path::new(path)
-        .extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+// MultiBit Classic .key files -> hashcat -m 22500.
+//
+//   $multibit$1*<salt>*<encrypted_data>
+//
+// The .key export is an OpenSSL "Salted__" container: 8-byte salt followed by
+// the ciphertext, of which the first two AES blocks are enough to verify a
+// candidate password.
+//
+// The .wallet variant (-m 27700, `$multibit$2*`/`$multibit$3*` with scrypt N/r/p)
+// is a bitcoinj protobuf and is not handled here — parsing protobuf to emit it
+// would be guesswork without a fixture, and .key is the file john's own tooling
+// recommends cracking anyway.
 
-    if ext == "key" {
-        // multibit classic key: $multibit$1*<salt>*<enc>
-        if data.len() < 48 { return None; }
-        let salt = to_hex(&data[8..16]);
-        let enc  = to_hex(&data[16..48]);
-        Some(vec![format!("$multibit$1*{}*{}", salt, enc)])
-    } else if ext == "wallet" || ext == "protobuf" {
-        // multibit HD wallet: $multibit$2*<hex>
-        if data.is_empty() { return None; }
-        let limit = data.len().min(256);
-        Some(vec![format!("$multibit$2*{}", to_hex(&data[..limit]))])
-    } else {
-        None
+const MAGIC: &[u8] = b"Salted__";
+const SALT_OFF: usize = 8;
+const SALT_END: usize = 16;
+/// Two AES blocks — what the cracker needs to test a candidate.
+const DATA_END: usize = 48;
+
+pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
+    if !data.starts_with(MAGIC) {
+        return None;
     }
+    let salt = data.get(SALT_OFF..SALT_END)?;
+    let encrypted = data.get(SALT_END..DATA_END)?;
+
+    Some(vec![format!(
+        "$multibit$1*{}*{}",
+        to_hex(salt),
+        to_hex(encrypted)
+    )])
 }

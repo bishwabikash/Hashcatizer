@@ -25,25 +25,9 @@ pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
     }
     // Encrypted data is near-uniform; anything materially below 6 bits/byte is
     // structured content that only looks like a header by accident.
-    if shannon_entropy(header) < 6.0 {
+    if !crate::common::looks_encrypted(header, 6.0) {
         return None;
     }
 
     Some(vec![format!("$diskcryptor$0*{}", to_hex(header))])
-}
-
-fn shannon_entropy(data: &[u8]) -> f64 {
-    let mut counts = [0usize; 256];
-    for &b in data {
-        counts[b as usize] += 1;
-    }
-    let len = data.len() as f64;
-    counts
-        .iter()
-        .filter(|&&c| c > 0)
-        .map(|&c| {
-            let p = c as f64 / len;
-            -p * p.log2()
-        })
-        .sum()
 }
