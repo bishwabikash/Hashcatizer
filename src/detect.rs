@@ -114,20 +114,24 @@ fn detect_by_extension(ext: &str, basename: &str) -> Option<&'static str> {
 }
 
 fn detect_by_content(head: &[u8], basename: &str) -> Option<&'static str> {
+    // PKCS#8 is its own format with its own hashcat modes (24410/24420), so it
+    // must be checked before the generic "PRIVATE KEY" cue below claims it.
+    if contains_prefix(head, b"-----BEGIN ENCRYPTED PRIVATE KEY-----") {
+        return Some("pem");
+    }
+
     // SSH private keys
     if contains_prefix(head, b"-----BEGIN OPENSSH PRIVATE KEY-----")
         || contains_prefix(head, b"-----BEGIN RSA PRIVATE KEY-----")
         || contains_prefix(head, b"-----BEGIN DSA PRIVATE KEY-----")
         || contains_prefix(head, b"-----BEGIN EC PRIVATE KEY-----")
-        || contains_prefix(head, b"-----BEGIN ENCRYPTED PRIVATE KEY-----")
     {
         return Some("ssh");
     }
-    if head.len() >= 512 {
-        if head[..512].windows(16).any(|w| w == b"PRIVATE KEY-----") {
+    if head.len() >= 512
+        && head[..512].windows(16).any(|w| w == b"PRIVATE KEY-----") {
             return Some("ssh");
         }
-    }
 
     // GPG/OpenPGP armored private key
     if contains_prefix(head, b"-----BEGIN PGP PRIVATE KEY BLOCK-----") {
@@ -229,11 +233,13 @@ fn detect_by_content(head: &[u8], basename: &str) -> Option<&'static str> {
         return Some("bitcoin");
     }
 
-    // NetNTLM :: pattern
-    if contains(head, b"::") {
-        if head.windows(4).any(|w| w[2] == b':' && w[3] == b':') {
-            return Some("netntlm");
-        }
+    // NetNTLM. Validate an actual line rather than the mere presence of "::",
+    // which also matches C++ scope resolution, IPv6 literals and YAML.
+    if text
+        .lines()
+        .any(|l| crate::converters::netntlm::classify(l.trim()).is_some())
+    {
+        return Some("netntlm");
     }
 
     // PGP SDA

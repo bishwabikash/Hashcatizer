@@ -69,9 +69,9 @@ fn parse_keybag(kb: &[u8]) -> Option<(u32, String)> {
     }
 
     let kb_hex = to_hex(&kb[..kb.len().min(256)]);
-    if dpic > 0 && dpsl.is_some() {
+    if let (true, Some(dpsl)) = (dpic > 0, dpsl) {
         // iOS >= 10.2 (mode 14800)
-        let dpsl_hex = to_hex(dpsl.unwrap());
+        let dpsl_hex = to_hex(dpsl);
         let first40 = to_hex(&kb[..kb.len().min(20)]);
         Some((10, format!("{}*{}*{}*{}*{}", first40, dpic, dpsl_hex, kb.len(), kb_hex)))
     } else {

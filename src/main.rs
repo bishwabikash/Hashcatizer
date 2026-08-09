@@ -2,76 +2,135 @@ use std::path::Path;
 use std::process;
 
 mod common;
+mod der;
 mod detect;
 mod converters;
 
-// Hashcat mode hints for quick reference
+// Hashcat mode hints, verified against `hashcat --example-hashes` (v7.1.2).
+//
+// Entries are only listed when hashcat genuinely implements the format this
+// converter emits. Several previous entries pointed at unrelated crackers
+// (monero -> 26620 MetaMask, multibit -> 22200 Citrix NetScaler, bestcrypt ->
+// 23400 Bitwarden, vdi -> 13711 VeraCrypt) or at modes that do not exist at
+// all, which sends users to spend GPU hours on the wrong kernel. Formats john
+// can crack but hashcat cannot are deliberately absent -- see `Crack::JohnOnly`.
 fn hashcat_mode_hint(name: &str) -> Option<&'static str> {
     match name {
-        "ansible"           => Some("16900"),
-        "bitcoin"           => Some("11300"),
+        // --- archives -------------------------------------------------------
+        "7z"                => Some("11600"),
+        "zip"               => Some("13600"),
+        "rar"               => Some("12500/13000/23700"),
+        "gpg"               => Some("17010/17020/17030/17040"),
+        // --- disk containers ------------------------------------------------
         "bitlocker"         => Some("22100"),
-        "bitwarden"         => Some("26400"),
-        "blockchain"        => Some("15200"),
-        "dmg"               => Some("12700"),
-        "electrum"          => Some("16600"),
-        "encfs"             => Some("6211-6221"),
-        "ethereum"          => Some("15600/15700"),
-        "ios"               => Some("14800"),
+        "truecrypt"         => Some("29311-29343"),
+        "veracrypt"         => Some("29411-29483"),
+        "diskcryptor"       => Some("20011/20012/20013"),
+        "bestcrypt"         => Some("23900/24000"),
+        "vdi"               => Some("27500/27600"),
+        "luks"              => Some("14600/29511-29543"),
+        "fvde"              => Some("16700"),
+        "androidfde"        => Some("12900"),
+        "ecryptfs"          => Some("12200"),
+        "dmg"               => Some("6211-6243"),
+        // --- documents ------------------------------------------------------
+        "pdf"               => Some("10400/10500/10600/10700"),
+        "office"            => Some("9400/9500/9600/9700/9800"),
+        "libreoffice"       => Some("18400"),
+        "iwork"             => Some("23300"),
+        // --- keys and keystores ---------------------------------------------
+        "pem"               => Some("24410/24420"),
+        "keystore"          => Some("15500"),
+        // --- password managers ----------------------------------------------
         "keepass"           => Some("13400"),
         "lastpass"          => Some("6800"),
-        "lion"              => Some("7100"),
-        "luks"              => Some("14600"),
-        "mac"               => Some("7100"),
-        "mozilla"           => Some("16600"),
-        "office"            => Some("9400/9500/9600/9700/9800"),
-        "1password"         => Some("8200"),
-        "pcap"              => Some("5500/5600"),
-        "pdf"               => Some("10400/10500/10600/10700"),
-        "pgpdisk"           => Some("22600"),
-        "pgpsda"            => Some("22600"),
-        "pgpwde"            => Some("22600"),
+        "1password"         => Some("6600/8200"),
+        "bitwarden"         => Some("23400"),
         "pwsafe"            => Some("5200"),
-        "sap"               => Some("7700/7800"),
-        "7z"                => Some("11600"),
-        "signal"            => Some("25300"),
-        "ssh"               => Some("22911/22921/22931/22941"),
-        "telegram"          => Some("22301"),
-        "truecrypt"         => Some("6211-6243"),
-        "vdi"               => Some("13711-13733"),
-        "veracrypt"         => Some("13711-13743"),
-        "zed"               => Some("13711"),
-        "androidbackup"     => Some("18900"),
-        "androidfde"        => Some("12900"),
-        "axcrypt"           => Some("13200"),
-        "bestcrypt"         => Some("23400"),
-        "cardano"           => Some("28500"),
-        "deepsound"         => Some("24310"),
-        "diskcryptor"       => Some("22500"),
-        "dpapimk"           => Some("15300/15900"),
-        "ecryptfs"          => Some("12200"),
-        "enpass"            => Some("24600"),
-        "fvde"              => Some("16700"),
-        "geli"              => Some("16800"),
-        "iwork"             => Some("9600"),
         "keychain"          => Some("23100"),
-        "libreoffice"       => Some("18400"),
-        "monero"            => Some("26620"),
-        "multibit"          => Some("22200"),
-        "netntlm"           => Some("5500/5600"),
-        "openssl_enc"       => Some("500"),
-        "pfx"               => Some("24410"),
-        "restic"            => Some("24410"),
-        "sevenz"            => Some("11600"),
-        "staroffice"        => Some("18400"),
-        "strip"             => Some("24420"),
-        "tezos"             => Some("28510"),
-        "vmx"               => Some("17300"),
+        "mozilla"           => Some("26000/26100"),
+        // --- wallets --------------------------------------------------------
+        "bitcoin"           => Some("11300"),
+        "ethereum"          => Some("15600/15700"),
+        "electrum"          => Some("16600/21700/21800"),
+        "blockchain"        => Some("12700/15200/34700"),
+        "multibit"          => Some("22500/27700"),
+        // --- messaging / mobile ---------------------------------------------
+        "androidbackup"     => Some("18900"),
+        "ios"               => Some("14800"),
+        "axcrypt"           => Some("13200"),
+        // --- network / auth -------------------------------------------------
+        "pcap"              => Some("22000/5500/5600"),
         "hccapx"            => Some("22000"),
-        "zip"               => Some("13600"),
-        "rar"               => Some("12500/13000"),
-        "gpg"               => Some("17010"),
+        "ikescan"           => Some("5300/5400"),
+        "sipdump"           => Some("11400"),
+        "ejabberd"          => Some("23200"),
+        "prosody"           => Some("23200"),
+        "mongodb"           => Some("24100/24200"),
+        "kirbi"             => Some("13100"),
+        "krb"               => Some("7500/13100/18200/19600-19900"),
+        "cisco"             => Some("500/9200/9300"),
+        "sap"               => Some("7700/7800"),
+        "mac"               => Some("7100"),
+        "lion"              => Some("7100"),
+        "dpapimk"           => Some("15300/15900"),
+        "vmx"               => Some("27400"),
+        "ansible"           => Some("16900"),
         _                   => None,
+    }
+}
+
+/// Advice printed under the extracted hashes.
+enum Crack {
+    /// hashcat can crack this; the string is the -m argument.
+    Hashcat(String),
+    /// A real format, but no hashcat kernel exists for it.
+    JohnOnly(&'static str),
+    Unknown,
+}
+
+/// Prefer a mode derived from the hash itself over the converter's static
+/// range: a converter can emit several formats, and only the emitted one is
+/// actually crackable. Guessing here is what makes a tool waste someone's night
+/// on the wrong -m.
+fn crack_advice(name: &str, hashes: &[String]) -> Crack {
+    if name == "ssh" {
+        return match hashes.first().map(|h| converters::ssh::hashcat_mode(h)) {
+            Some(Some(m)) => Crack::Hashcat(m.to_string()),
+            Some(None) => Crack::JohnOnly(
+                "OpenSSH bcrypt-pbkdf key — hashcat has no kernel for these; use john",
+            ),
+            None => Crack::Unknown,
+        };
+    }
+    // Telegram Desktop spans three formats with three different modes; only the
+    // emitted variant is meaningful.
+    if name == "telegram" {
+        if let Some(Some(m)) = hashes.first().map(|h| converters::telegram::hashcat_mode(h)) {
+            return Crack::Hashcat(m.to_string());
+        }
+    }
+    if name == "netntlm" {
+        if let Some(Some(m)) = hashes.first().map(|h| converters::netntlm::classify(h)) {
+            return Crack::Hashcat(m.to_string());
+        }
+    }
+    match hashcat_mode_hint(name) {
+        Some(m) => Crack::Hashcat(m.to_string()),
+        None => Crack::Unknown,
+    }
+}
+
+fn print_advice(name: &str, hashes: &[String]) {
+    match crack_advice(name, hashes) {
+        Crack::Hashcat(mode) => {
+            eprintln!("[*] Crack with: hashcat -m {} <hashfile> <wordlist>", mode)
+        }
+        Crack::JohnOnly(why) => {
+            eprintln!("[!] {}", why);
+            eprintln!("[*] Crack with: john --wordlist=<wordlist> <hashfile>");
+        }
+        Crack::Unknown => {}
     }
 }
 
@@ -138,9 +197,7 @@ fn run_converter(name: &str, path: &str) {
             for h in &hashes {
                 println!("{}", h);
             }
-            if let Some(mode) = hashcat_mode_hint(name) {
-                eprintln!("[*] Crack with: hashcat -m {} <hashfile> <wordlist>", mode);
-            }
+            print_advice(name, &hashes);
         }
         _ => {
             eprintln!("No hashes extracted from '{}' using converter '{}'", path, name);
@@ -165,9 +222,7 @@ fn run_autodetect(path: &str) {
                     for h in &hashes {
                         println!("{}", h);
                     }
-                    if let Some(mode) = hashcat_mode_hint(name) {
-                        eprintln!("[*] Crack with: hashcat -m {} <hashfile> <wordlist>", mode);
-                    }
+                    print_advice(name, &hashes);
                 }
                 _ => {
                     eprintln!("Converter '{}' produced no output for '{}'", name, path);
@@ -177,18 +232,22 @@ fn run_autodetect(path: &str) {
         }
         None => {
             // Try all converters as fallback
-            eprintln!("[*] Unknown type — trying all converters...");
+            eprintln!("[*] Unknown type — trying self-identifying converters...");
             let mut found = false;
             for name in converters::all_names() {
+                // Loosely-matching converters are excluded here on purpose: in a
+                // blind sweep the first one to say "yes" wins, so a permissive
+                // converter would mask every later, correct one.
+                if !converters::fallback_safe(name) {
+                    continue;
+                }
                 if let Some(hashes) = converters::run(name, &data, path) {
                     if !hashes.is_empty() {
                         eprintln!("[*] {} matched:", name);
                         for h in &hashes {
                             println!("{}", h);
                         }
-                        if let Some(mode) = hashcat_mode_hint(name) {
-                            eprintln!("[*] Crack with: hashcat -m {} <hashfile> <wordlist>", mode);
-                        }
+                        print_advice(name, &hashes);
                         found = true;
                         break;
                     }

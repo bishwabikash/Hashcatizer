@@ -55,14 +55,13 @@ fn parse_der_pbes2(der: &[u8]) -> Option<(Vec<u8>, u32, Vec<u8>)> {
                     enc_data = val.to_vec();
                 }
             }
-            0x02 => {
+            0x02
                 // INTEGER — iterations
-                if len <= 4 {
+                if len <= 4 => {
                     let mut n: u32 = 0;
                     for &b in val { n = (n << 8) | b as u32; }
                     iters = n;
                 }
-            }
             _ => {}
         }
         if tag != 0x30 && tag != 0xA0 && tag != 0xA1 && tag != 0x06 && tag != 0x04 && tag != 0x02 {

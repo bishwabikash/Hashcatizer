@@ -1,4 +1,4 @@
-/// Shared byte-parsing utilities used by every converter.
+//! Shared byte-parsing utilities used by every converter.
 
 /// Encode bytes as lowercase hex string.
 #[inline]
@@ -112,7 +112,7 @@ pub fn b64_encode(data: &[u8]) -> String {
 
 /// Read a 4-byte big-endian length-prefixed byte string.
 #[allow(dead_code)]
-pub fn read_be_blob<'a>(data: &'a [u8], offset: usize) -> Option<(&'a [u8], usize)> {
+pub fn read_be_blob(data: &[u8], offset: usize) -> Option<(&[u8], usize)> {
     if offset + 4 > data.len() {
         return None;
     }

@@ -63,13 +63,12 @@ fn parse_vmk_subentries(vmk: &[u8]) -> Option<String> {
                     salt = Some(vmk[off + 8..off + 24].to_vec());
                 }
             }
-            0x0005 => {
+            0x0005
                 // AES-CCM: nonce [8..20], mac [20..36], enc_data [36..sub_size]
-                if off + sub_size <= vmk.len() {
+                if off + sub_size <= vmk.len() => {
                     nonce = Some(vmk[off + 8..off + 20].to_vec());
                     mac_and_enc = Some(vmk[off + 20..off + sub_size].to_vec());
                 }
-            }
             _ => {}
         }
         off += sub_size;
