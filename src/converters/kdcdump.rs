@@ -1,20 +1,27 @@
-use crate::common::to_hex;
+// KDC key dumps -> hashcat -m 1000 (NTLM).
+//
+//   $NT$<32 hex>
+//
+// A dump line is "principal:hash"; only entries whose second field is a real
+// NT hash are emitted. The previous implementation hex-dumped the first 512
+// bytes of whatever it was given.
 
 pub fn convert(data: &[u8], _f: &str) -> Option<Vec<String>> {
     let text = std::str::from_utf8(data).ok()?;
     let mut out = Vec::new();
+
     for line in text.lines() {
-        let l = line.trim();
-        // Format: principal:enctype:kvno:key_hex
-        let parts: Vec<&str> = l.splitn(4, ':').collect();
-        if parts.len() == 4 {
-            let _ = parts[1].parse::<u32>().ok()?;
-            out.push(format!("$krb5kdc${}*{}*{}*{}", parts[1], parts[2], parts[0], parts[3]));
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let Some((_principal, rest)) = line.split_once(':') else {
+            continue;
+        };
+        let hash = rest.trim().trim_start_matches("$NT$");
+        if hash.len() == 32 && hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            out.push(format!("$NT${}", hash.to_ascii_lowercase()));
         }
     }
-    if out.is_empty() {
-        // binary dump fallback
-        let limit = data.len().min(256);
-        Some(vec![format!("$krb5kdc$0*0*unknown*{}", to_hex(&data[..limit]))])
-    } else { Some(out) }
+    if out.is_empty() { None } else { Some(out) }
 }

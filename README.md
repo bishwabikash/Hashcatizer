@@ -117,8 +117,16 @@ tools/difftest.sh fixtures
 Verified byte-identical to JtR: `7z` (5 archive layouts), `ssh` (PEM + all
 OpenSSH key types), `zip`, `gpg`, `ansible`, `openssl`, `pem`, `sipdump`.
 
-> **Status:** not every converter is finished. Roughly a third still return a
-> fixed-length hex dump rather than a parsed hash — those produce well-formed
+Implemented against the JtR reference but without a local fixture to diff
+against: `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
+`keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`, `dashlane`,
+`enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`, `ejabberd`,
+`ikescan`, `netntlm`, `known_hosts`, `radius`.
+
+> **Status:** not every converter is finished. Thirteen still return a
+> fixed-length hex dump rather than a parsed hash — `vdi`, `bestcrypt`,
+> `coinomi`, `dpapimk`, `hccapx`, `openbsd_softraid`, `pfx`, `staroffice`,
+> `strip`, `lotus`, `atmail`, `network`, `fvde` — those produce well-formed
 > output that **will not crack**. A converter is only trustworthy once it
 > appears in the verified list above. Contributions welcome; follow the
 > differential-testing workflow rather than eyeballing the output.
