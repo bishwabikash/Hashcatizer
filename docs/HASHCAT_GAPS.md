@@ -59,6 +59,7 @@ kernel. Listed roughly by how often they turn up in practice:
 
 | Format | Emitted as | Notes |
 |---|---|---|
+| BestCrypt v3 + pgphaSHA256 | — (no extractor exists) | see below |
 | GnuPG `known_hosts` | `$known_hosts$` | HMAC-SHA1; `-m 160` is close but takes a raw-text salt |
 | OpenSSL `enc` | `$openssl$` | cipher/digest unknown from the file; needs a sweep |
 | PKCS#12 / PFX | `$pfxng$` | MAC-based; related to but distinct from `-m 24410` |
@@ -81,3 +82,33 @@ Read `docs/contributing.md` and the module/kernel conventions in the hashcat
 tree. New modes need a `module_NNNNN.c`, kernels for each attack mode, an entry
 in the tools test suite, and an example hash — the example hash is what
 `--example-hashes` prints and what this project verifies against.
+
+
+## 4. BestCrypt: `$bcve$` has no extractor in either project
+
+`-m 23900` and `-m 24000` exist, but nothing produces hashes for them.
+
+`module_23900.c` hard-requires `format_type == '3'` and `crypto_type == "08"`,
+takes an 8-byte salt and a 96-byte blob, and its KDF (`tools/test_modules/
+m23900.pm`) is `SHA256(repeat(salt || password, 65536))` — **no iteration
+count**. Decoded: keygen version 3, `hash_id 8` = `pgphaSHA256`, which is the
+older keygen where the iterations field doubles as the version.
+
+`bestcrypt2john.py` handles the *other* generation: keygen v5, 16384
+iterations, `hash_id` in {128 `bchaSHA256`, 129 `bchaWhirlpool512`,
+10 `pgphaSHA512`}, 32/64-byte salts and 256-byte key slots. It explicitly
+rejects `hash_id 8`. All nine test vectors in `bestcrypt_fmt_plug.c` are v5.
+
+So the two cover **disjoint container generations** and there is no path from a
+real container to a `$bcve$` hash. Hashcatizer emits john's `$BestCrypt$`
+(verified: all nine JtR vectors round-trip byte-identically, see
+`tools/bestcrypt_roundtrip.py` and the unit test) and deliberately prints no
+`-m` hint.
+
+Two things worth upstreaming, in increasing order of effort:
+
+1. An extractor for the v3/pgphaSHA256 layout, so `-m 23900` becomes reachable
+   at all. Needs a v3 container to pin the salt and blob offsets.
+2. Modes covering the v5 generation john already supports — iterated PKCS#12
+   PBE with Whirlpool-512 / SHA-256 / SHA-512. This is the generation BestCrypt
+   9.x actually writes, so it is the one that matters in practice.
