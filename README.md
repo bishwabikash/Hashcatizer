@@ -126,11 +126,11 @@ Whirlpool-512 with both CBC and XTS.
 
 Implemented against the JtR reference but without a local fixture to diff
 against (correct by construction, not yet by measurement): `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
-`keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`, `dashlane`,
-`enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`, `ejabberd`,
-`ikescan`, `netntlm`, `known_hosts`, `radius`, `hccapx`, `openbsd_softraid`,
-`lotus`, `strip`, `atmail`, `network`, `kdcdump`, `vdi`, `fvde`, `coinomi`,
-`dpapimk`, `keychain`, `multibit`, `bestcrypt`, `kwallet`, `ccache`, `signal`.
+`keychain`, `ecryptfs`, `androidbackup`, `multibit`, `andotp`,
+`dashlane`, `enpass`, `monero`, `htdigest`, `kdcdump`, `aix`, `prosody`,
+`ejabberd`, `ikescan`, `netntlm`, `known_hosts`, `radius`, `hccapx`,
+`openbsd_softraid`, `lotus`, `strip`, `atmail`, `network`, `vdi`, `fvde`,
+`coinomi`, `dpapimk`, `kwallet`, `ccache`, `signal`.
 
 Formats whose headers are fully encrypted (`truecrypt`, `veracrypt`, `enpass`,
 `strip`, `andotp`, `dashlane`, `diskcryptor`) carry no magic bytes, so they are
@@ -146,10 +146,34 @@ of the auto-detect sweep for that reason.
 > appears in the verified list above. Contributions welcome; follow the
 > differential-testing workflow rather than eyeballing the output.
 
-Mode numbers in the table below were checked against
-`hashcat --example-hashes` (v7.1.2). Entries marked `— (john)` are real formats
-that hashcat has no kernel for; the tool tells you so at runtime rather than
-printing a `-m` that cannot work.
+Every mode number in the table below is checked against hashcat's own
+`docs/hashcat-example-hashes.md`, both that the mode exists and that its name
+matches the format claimed. That check found ten rows citing a real mode
+belonging to an unrelated format — `signal` pointed at MS Office
+SheetProtection, `zed` at VeraCrypt, the three PGP converters at Telegram
+Desktop — which is worse than no mode at all, since the command looks valid and
+simply never cracks. All are corrected.
+
+Entries marked `—` are formats hashcat has no kernel for. Hashcatizer still
+extracts them, in JtR encoding, and says so at runtime rather than printing a
+`-m` that cannot work.
+
+### Upstream work
+
+Gaps found here that belong in hashcat rather than in this tool are fixed
+there. Currently open:
+
+| | |
+|---|---|
+| [hashcat#4767](https://github.com/hashcat/hashcat/pull/4767) | `-m 37500`, a GPU kernel for OpenSSH bcrypt-pbkdf keys — the format `ssh-keygen` has produced by default since 2018, which hashcat had no mode for |
+| [hashcat#4766](https://github.com/hashcat/hashcat/pull/4766) | `-m 24420` rejected the `$PEM$2` layout `pem2john.py` emits ([#4765](https://github.com/hashcat/hashcat/issues/4765)) |
+| [hashcat#4768](https://github.com/hashcat/hashcat/pull/4768) | combinator attacks reported a plaintext truncated to 256 chars that did not match the cracked digest ([#4042](https://github.com/hashcat/hashcat/issues/4042)) |
+
+Background reading in [`docs/`](docs):
+
+- [HASHCAT_GAPS.md](docs/HASHCAT_GAPS.md) — formats hashcat cannot crack, ranked
+- [HASHCAT_SSH_BCRYPT_MODE.md](docs/HASHCAT_SSH_BCRYPT_MODE.md) — design and implementation notes for `-m 37500`
+- [RESEARCH_SSH_KEY_CRACKING.md](docs/RESEARCH_SSH_KEY_CRACKING.md) — measured attack economics for modern SSH keys
 
 ---
 
@@ -157,40 +181,41 @@ printing a `-m` that cannot work.
 
 | Converter | Hashcat Mode(s) | Description |
 |---|---|---|
-| `ssh` | 22911–22951 | SSH private keys. **Modern OpenSSH bcrypt keys are john-only** — hashcat has no kernel for them |
+| `ssh` | 22911–22951 | SSH private keys. **Modern OpenSSH bcrypt-pbkdf keys are john-only** in released hashcat — [a kernel for them is proposed upstream](https://github.com/hashcat/hashcat/pull/4767) |
 | `pdf` | 10400–10700 | PDF 1.1–2.0 |
 | `office` | 9400–9800 | MS Office 97–2013+ |
 | `keepass` | 13400 | KeePass 1.x / 2.x |
 | `bitlocker` | 22100 | BitLocker volumes |
 | `truecrypt` | 29311–29343 | TrueCrypt volumes (legacy: 6211–6243) |
 | `veracrypt` | 29411–29483 | VeraCrypt volumes (legacy: 13711–13783) |
-| `luks` | 14600 | LUKS encrypted volumes |
+| `luks` | 14600, 29511–29543 | LUKS v1 encrypted volumes |
 | `ethereum` | 15600, 15700 | Ethereum wallets (scrypt / pbkdf2) |
 | `bitcoin` | 11300 | Bitcoin / Litecoin wallet.dat |
-| `electrum` | 16600 | Electrum wallets |
-| `blockchain` | 15200 | Blockchain.com wallets |
+| `electrum` | 16600, 21700, 21800 | Electrum wallets (salt-type 1–5) |
+| `blockchain` | 12700, 15200, 34700 | Blockchain.com wallets |
 | `ansible` | 16900 | Ansible Vault |
 | `bitwarden` | 23400 | Bitwarden |
 | `lastpass` | 6800 | LastPass |
-| `1password` | 8200 | 1Password vaults |
+| `1password` | 6600, 8200 | 1Password (agilekeychain / cloudkeychain) |
 | `pwsafe` | 5200 | Password Safe v3 |
-| `encfs` | 6211–6221 | EncFS |
-| `dmg` | 12700 | Apple DMG encrypted images |
-| `mozilla` | 16600 | Firefox / Thunderbird key3/key4.db |
-| `telegram` | 22600/24500 | Telegram Desktop (22301 = mobile passcode) |
-| `signal` | 25300 | Signal Desktop / Android |
+| `encfs` | — | EncFS — no hashcat kernel |
+| `dmg` | — | Apple DMG encrypted images — no hashcat kernel |
+| `mozilla` | 26000/26100 | Firefox / Thunderbird key3.db / key4.db |
+| `telegram` | 22600, 24500, 22301 | Telegram Desktop (22301 = mobile passcode) |
+| `signal` | — | Signal Desktop / Android — no hashcat kernel |
 | `7z` | 11600 | 7-Zip archives |
 | `zip` | 13600 | WinZip AES-encrypted ZIP |
-| `rar` | 12500, 13000 | RAR3 (-hp) / RAR5 archives |
-| `gpg` | 17010 | GnuPG / OpenPGP secret keys |
-| `pgpdisk` | 22600 | PGP Virtual Disk |
-| `pgpsda` | 22600 | PGP Self-Decrypting Archives |
-| `pgpwde` | 22600 | PGP Whole Disk Encryption |
-| `zed` | 13711 | ZED / AxCrypt containers |
+| `rar` | 12500, 13000, 23700 | RAR3 (-hp / -p) and RAR5 archives |
+| `gpg` | 17010–17040 | GnuPG / OpenPGP secret keys |
+| `pgpdisk` | — | PGP Virtual Disk — no hashcat kernel |
+| `pgpsda` | — | PGP Self-Decrypting Archives — no hashcat kernel |
+| `pgpwde` | — | PGP Whole Disk Encryption — no hashcat kernel |
+| `zed` | — | ZED / AxCrypt containers — no hashcat kernel |
 | `mac` | 7100 | macOS password hashes |
-| `lion` | 7100 | macOS Lion SHA-512 |
-| `pcap` | 5500, 5600 | PCAP / PCAPNG (NTLM, WPA) |
+| `lion` | 7100 | macOS Lion SHA-512 (emits `$ml$` form) |
+| `pcap` | 22000, 5500, 5600 | PCAP / PCAPNG (WPA, NetNTLM) |
 | `netntlm` | 5500, 5600 | NetNTLMv1/v2 |
+| `network` | — | Network capture credential hashes |
 | `cisco` | 500, 9200, 9300 | Cisco IOS configs |
 | `sap` | 7700, 7800 | SAP CODVN B/F/G |
 | `ldif` | various | LDAP LDIF hashes |
@@ -201,35 +226,36 @@ printing a `-m` that cannot work.
 | `androidfde` | 12900 | Android Full-Disk Encryption |
 | `axcrypt` | 13200 | AxCrypt |
 | `bestcrypt` | 23900/24000 | BestCrypt v3/v4 volumes |
-| `cardano` | — (john) | Cardano wallets |
+| `cardano` | — | Cardano wallets |
 | `coinomi` | — | Coinomi wallets |
 | `dashlane` | — | Dashlane vaults |
-| `deepsound` | — (john) | DeepSound audio steganography |
+| `deepsound` | — | DeepSound audio steganography |
 | `diskcryptor` | 20011–20013 | DiskCryptor volumes |
 | `dpapimk` | 15300, 15900 | Windows DPAPI Master Keys |
 | `ecryptfs` | 12200 | eCryptfs |
-| `enpass` | — (john) | Enpass |
+| `enpass` | — | Enpass |
 | `fvde` | 16700 | FileVault 2 / Core Storage |
-| `geli` | — (john) | FreeBSD GELI |
-| `htdigest` | — (john) | Apache htdigest |
+| `geli` | — | FreeBSD GELI |
+| `htdigest` | — | Apache htdigest |
 | `hccapx` | 22000 | WPA2 HCCAPX |
 | `iwork` | 23300 | Apple iWork (Pages/Numbers/Keynote) |
 | `keychain` | 23100 | macOS Keychain |
 | `keyring` | — | GNOME Keyring |
-| `known_hosts` | — (john) | SSH known_hosts (hashed) |
+| `known_hosts` | — | SSH known_hosts (hashed) |
 | `libreoffice` | 18400 | LibreOffice / ODF documents |
-| `monero` | — (john) | Monero wallets |
+| `monero` | — | Monero wallets |
 | `multibit` | 22500/27700 | MultiBit wallets |
 | `openbsd_softraid` | — | OpenBSD softraid crypto |
-| `openssl` | — (john) | OpenSSL `enc` (Salted__) |
+| `openssl` | — | OpenSSL `enc` (Salted__) |
 | `pem` | 24410/24420 | Encrypted PKCS#8 private keys |
-| `pfx` | — (john) | PKCS#12 / PFX |
-| `restic` | — (john) | Restic repos |
-| `staroffice` | — (john) | StarOffice / OOo documents |
-| `strip` | — (john) | Strip password manager |
-| `tezos` | — (john) | Tezos wallets |
-| `vmx` | 17300 | VMware VMX encryption |
+| `pfx` | — | PKCS#12 / PFX |
+| `restic` | — | Restic repos |
+| `staroffice` | — | StarOffice / OOo documents |
+| `strip` | — | Strip password manager |
+| `tezos` | — | Tezos wallets |
+| `vmx` | 27400 | VMware VMX encryption |
 | `aix` | — | AIX password hashes |
+| `atmail` | — | Atmail webmail hashes |
 | `andotp` | — | andOTP backups |
 | `applenotes` | — | Apple Notes (encrypted) |
 | `bks` | — | Bouncy Castle BKS keystore |
@@ -241,9 +267,9 @@ printing a `-m` that cannot work.
 | `keystore` | 15500 | Java KeyStore (JKS) |
 | `keplr` | — | Keplr wallet |
 | `kirbi` | 13100 | Kerberos tickets (kirbi) |
-| `krb` | — | Kerberos hashes |
+| `krb` | 7500, 13100, 18200, 19600–19900 | Kerberos 5 AS-REQ / AS-REP / TGS-REP |
 | `kwallet` | — | KDE KWallet |
-| `lotus` | — | Lotus Notes ID files |
+| `lotus` | 8600/8700/9100 | Lotus Notes / Domino 5, 6, 8 ID files |
 | `prosody` | 23200 | Prosody XMPP SCRAM hashes |
 | `radius` | — | RADIUS hashes |
 | `sipdump` | 11400 | SIP digest auth |

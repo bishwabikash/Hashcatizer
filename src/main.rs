@@ -33,7 +33,9 @@ fn hashcat_mode_hint(name: &str) -> Option<&'static str> {
         "fvde"              => Some("16700"),
         "androidfde"        => Some("12900"),
         "ecryptfs"          => Some("12200"),
-        "dmg"               => Some("6211-6243"),
+        // hashcat has no DMG kernel; this used to emit the TrueCrypt legacy
+        // modes, which parse a completely different container and never crack.
+        "dmg"               => None,
         // --- documents ------------------------------------------------------
         "pdf"               => Some("10400/10500/10600/10700"),
         "office"            => Some("9400/9500/9600/9700/9800"),
