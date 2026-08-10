@@ -49,11 +49,23 @@ consider a password-strength decision.
 
 Cross-check against measurement: hashcat's `-m 3200` benchmark runs cost 5
 (65 ExpandKey) at 36,994 H/s. Scaling by 4128/65 = 63.5 predicts **≈583 H/s**
-for the SSH mode on this GPU. Against the measured CPU figure that is a
-**~6.7x** speedup — not the 10,000x that GPUs buy against fast hashes.
+for the SSH mode on this GPU.
 
-That ratio is the honest case for the mode: real, worth having, and modest.
-Anyone expecting bcrypt-pbkdf to fall over on a GPU has misread the algorithm.
+The mode now exists, so that prediction can be checked rather than argued:
+
+```
+hashcat -b -m 37500 --backend-devices 1
+Speed.#01........:      592 H/s (810.43ms) @ Accel:1 Loops:1 Thr:24 Vec:1
+```
+
+**592 H/s measured against 583 H/s predicted — within 1.5%.** The cost model in
+section 2 is therefore sound, and the `2 x rounds x 129` ExpandKey figure it
+rests on can be trusted for other round counts.
+
+Against the measured CPU figure that is a **6.8x** speedup — not the 10,000x
+that GPUs buy against fast hashes. That ratio is the honest case for the mode:
+real, worth having, and modest. Anyone expecting bcrypt-pbkdf to fall over on a
+GPU has misread the algorithm.
 
 ## 3. Why GPUs gain so little here — measured
 
@@ -99,7 +111,7 @@ at no extra shared memory, since the Blowfish state is rebuilt per
 
 ## 5. Where the attack surface actually is
 
-Given ~583 H/s, brute force is finished as a strategy. What remains:
+Given 592 H/s, brute force is finished as a strategy. What remains:
 
 **`rounds` is attacker-visible and usually default.** The extractor emits it in
 the hash. Values above 16 are rare, so cost is predictable before committing
@@ -109,7 +121,7 @@ may not be worth attacking at all.
 **Key comments leak.** The `openssh-key-v1` blob carries the public key and
 comment in cleartext, typically `user@host`. Hashcatizer already emits the full
 blob, so the comment is available for targeted wordlist generation without any
-cracking. At 583 H/s a 10,000-candidate targeted list runs in 17 seconds; a
+cracking. At 592 H/s a 10,000-candidate targeted list runs in 17 seconds; a
 generic 14M list takes 7 hours. Targeting is worth roughly three orders of
 magnitude more than hardware here.
 
@@ -123,22 +135,28 @@ completely and cost nothing.
 
 ## 6. What this says about hashcat's coverage
 
-hashcat implements `-m 22911..22951` — MD5-KDF PEM keys, deprecated for seven
-years, crackable at 2 GH/s. It has no kernel for the format `ssh-keygen`
+Stock hashcat implements `-m 22911..22951` — MD5-KDF PEM keys, deprecated for
+seven years, crackable at 2 GH/s. It has no kernel for the format `ssh-keygen`
 produces by default.
 
 The gap is not that hashcat is missing a fast target. It is that hashcat is
 missing the *only* SSH key format still in use, and users reading
 `--example-hashes` reasonably conclude their modern keys are covered when they
-are not. Hashcatizer now says so explicitly at runtime rather than printing a
-`-m` that cannot work:
+are not.
+
+**This gap is now closed in a local branch**, not yet upstream: `-m 37500`
+implements bcrypt-pbkdf as a real GPU kernel and recovers ed25519, RSA and
+ECDSA keys across both `aes256-ctr` and `aes256-cbc`, at the 592 H/s measured
+above. Until it is merged, Hashcatizer keeps telling the truth about stock
+hashcat rather than printing a `-m` that a released build cannot run:
 
 ```
 [!] OpenSSH bcrypt-pbkdf key — hashcat has no kernel for these; use john
 [*] Crack with: john --wordlist=<wordlist> <hashfile>
 ```
 
-Design and status for the proposed mode: [HASHCAT_SSH_BCRYPT_MODE.md](HASHCAT_SSH_BCRYPT_MODE.md).
+Design, implementation notes and the two endianness defects that made the first
+version derive a wrong key: [HASHCAT_SSH_BCRYPT_MODE.md](HASHCAT_SSH_BCRYPT_MODE.md).
 
 ## Reproducing
 
