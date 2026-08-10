@@ -115,7 +115,14 @@ tools/difftest.sh fixtures
 ```
 
 Verified byte-identical to JtR: `7z` (5 archive layouts), `ssh` (PEM + all
-OpenSSH key types), `zip`, `gpg`, `ansible`, `openssl`, `pem`, `sipdump`.
+OpenSSH key types), `zip`, `gpg`, `ansible`, `openssl`, `pem`, `sipdump`,
+`staroffice`, `pfx`, `keystore`.
+
+`bestcrypt` is verified differently: John's format source ships nine test
+vectors taken from real containers, so `tools/bestcrypt_roundtrip.py` rebuilds
+a container from each vector's fields and checks the extractor reproduces it.
+All nine round-trip byte-identically, covering SHA-256, SHA-512 and
+Whirlpool-512 with both CBC and XTS.
 
 Implemented against the JtR reference but without a local fixture to diff
 against (correct by construction, not yet by measurement): `truecrypt`, `veracrypt`, `diskcryptor`, `geli`, `telegram`, `kirbi`,
