@@ -62,6 +62,8 @@ fn hashcat_mode_hint(name: &str) -> Option<&'static str> {
         "androidbackup"     => Some("18900"),
         "ios"               => Some("14800"),
         "axcrypt"           => Some("13200"),
+        "bestcrypt"         => Some("23900/24000"),
+        "lotus"             => Some("8600/8700/9100"),
         // --- network / auth -------------------------------------------------
         "pcap"              => Some("22000/5500/5600"),
         "hccapx"            => Some("22000"),
