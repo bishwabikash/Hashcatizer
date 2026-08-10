@@ -31,6 +31,11 @@ handle legacy PEM keys with the MD5-based KDF.
   The Blowfish core already exists in `OpenCL/inc_cipher_blowfish.cl` and
   `m03200-pure.cl`, so the new work is the SHA-512 glue and the outer loop.
 - **Full design: [HASHCAT_SSH_BCRYPT_MODE.md](HASHCAT_SSH_BCRYPT_MODE.md)**
+- **Measurements and attack economics:
+  [RESEARCH_SSH_KEY_CRACKING.md](RESEARCH_SSH_KEY_CRACKING.md)** — measured
+  86.5 c/s on 16 CPU cores vs 2.08 GH/s for the legacy PEM format hashcat
+  *does* implement: a 24-million-fold gap. Default `-a 16` works out to bcrypt
+  cost factor 11.
 
 > The v7 Assimilation Bridge (`-m 74000` Rust, `-m 72000/73000` Python) can
 > express this algorithm in a handful of lines, but it executes on CPU only.

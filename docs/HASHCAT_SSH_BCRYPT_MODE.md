@@ -75,8 +75,23 @@ Standard slow-hash split (`ATTACK_EXEC_OUTSIDE_KERNEL`):
 hashcat's autotuner splits the outer loop the way it does for `-m 3200`'s cost
 factor.
 
-`tmp_t` carries: `pass_hash[8]` (u64), `salt_hash[8]`, `out[8]` (u32), `tmp[8]`,
-plus the Blowfish state when it cannot stay in shared memory.
+`tmp_t` carries: `pass_hash[8]` (u64), `salt_hash[8]`, `out[8]` (u32), `tmp[8]`.
+It does **not** carry the Blowfish state, unlike `-m 3200`'s `bcrypt_tmp_t`:
+bcrypt's loop is resumable across invocations, but every `bcrypt_hash()` here
+rebuilds the state from scratch and discards it, so only the accumulator
+survives a round.
+
+Two corrections found while building the module, both of which change the cost
+model above:
+
+1. **A `bcrypt_hash()` cannot be split across invocations**, so `kernel_loops`
+   is pinned at 1 and hashcat runs one invocation per round.
+2. **A 48-byte key needs two blocks, not one** (`stride = 2`), and each runs the
+   full round loop — so the real work is `2 x rounds` bcrypt_hash calls, double
+   the naive estimate. The two chains are independent and can be interleaved.
+
+For a first working version, set `salt_iter = 1` and do the whole derivation in
+`_loop`: correctness before granularity, then split once it validates.
 
 ### Occupancy
 
