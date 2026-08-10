@@ -58,8 +58,30 @@ order of magnitude per guess as `-m 3200` at `$2b$11$`.
   `OPTS_TYPE_DYNAMIC_SHARED` and the `module_extra_buffer_size` /
   `module_kernel_threads_*` logic that manages S-box residency.
 
-The genuinely new work is the SHA-512 glue around `bcrypt_hash`, the outer
-round loop, and the verification step — not the Blowfish core.
+**Correction to the above, from reading the primitives rather than assuming.**
+"Just add SHA-512 glue" was too optimistic. What is actually reusable:
+
+| Primitive | Reusable? |
+|---|---|
+| `blowfish_encrypt()` — the 521-encryption rekey core | **yes**, this is `expand0state`'s body |
+| `c_pbox` / `c_sbox0..3` constants | **yes**, for `Blowfish_initstate` |
+| `blowfish_set_key_salt()` | **no** — see below |
+| `blowfish_set_key()` | **no** — re-initialises state on entry |
+
+`blowfish_set_key_salt()` hardcodes a **4-word (16-byte) salt**: it indexes
+`salt_buf[(i & 2) + 0]`, and its S-box loops reference `salt_buf[0..3]`
+literally. bcrypt-pbkdf's `Blowfish_expandstate` takes a **64-byte
+`sha2salt`** — 16 words, cycling over all of them. The existing helper cannot
+express that, so `expandstate` needs a 16-word variant written for this mode.
+
+Both `set_key` helpers also re-initialise P and the S-boxes on entry, which is
+correct for the single `expandstate` call but wrong for the 128 `expand0state`
+calls that follow — those must mutate the *existing* state. `-m 3200` handles
+this by writing the expand0state step inline in its loop
+(`P[i] ^= E[i]; blowfish_encrypt(...)`), and this mode should do the same.
+
+So the new work is: a 16-word-salt `expandstate`, the inline `expand0state`
+loop, SHA-512 glue, the two-block outer loop, and verification.
 
 ## Kernel structure
 
@@ -75,8 +97,23 @@ Standard slow-hash split (`ATTACK_EXEC_OUTSIDE_KERNEL`):
 hashcat's autotuner splits the outer loop the way it does for `-m 3200`'s cost
 factor.
 
-`tmp_t` carries: `pass_hash[8]` (u64), `salt_hash[8]`, `out[8]` (u32), `tmp[8]`,
-plus the Blowfish state when it cannot stay in shared memory.
+`tmp_t` carries: `pass_hash[8]` (u64), `salt_hash[8]`, `out[8]` (u32), `tmp[8]`.
+It does **not** carry the Blowfish state, unlike `-m 3200`'s `bcrypt_tmp_t`:
+bcrypt's loop is resumable across invocations, but every `bcrypt_hash()` here
+rebuilds the state from scratch and discards it, so only the accumulator
+survives a round.
+
+Two corrections found while building the module, both of which change the cost
+model above:
+
+1. **A `bcrypt_hash()` cannot be split across invocations**, so `kernel_loops`
+   is pinned at 1 and hashcat runs one invocation per round.
+2. **A 48-byte key needs two blocks, not one** (`stride = 2`), and each runs the
+   full round loop — so the real work is `2 x rounds` bcrypt_hash calls, double
+   the naive estimate. The two chains are independent and can be interleaved.
+
+For a first working version, set `salt_iter = 1` and do the whole derivation in
+`_loop`: correctness before granularity, then split once it validates.
 
 ### Occupancy
 
