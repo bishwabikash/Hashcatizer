@@ -677,4 +677,27 @@ mod tests {
             run_all(&format!("utf8_{}", i), line.as_bytes());
         }
     }
+
+    #[test]
+    fn macos_sha512_emits_the_m1722_layout() {
+        // hashcat -m 1722 takes an 8 hex char salt and a 128 hex char digest
+        // concatenated with no separator. Both converters used to wrap those in
+        // "$ml$0$<salt>$<digest>", which is the shape of -m 7100 -- but 7100 is
+        // the 10.8+ PBKDF2 format and needs a real iteration count, so a zero
+        // there matched no mode and the output could not be cracked at all.
+        //
+        // This vector is hashcat's own module_01722 example hash, password
+        // "hashcat", and it cracks under -m 1722 exactly as emitted here.
+        let vector = "07543781b07e905f6f947db8ae305c248b9e12f509b41097e852e2f450e8247\
+90e677ea7397b8a9a552b1c19ecf6a6e1dd3844fa5ee5db23976962859676f7d2fb85ca94";
+        let vector: String = vector.chars().filter(|c| !c.is_whitespace()).collect();
+        assert_eq!(vector.len(), 136);
+
+        let input = format!("alice:{}\n", vector);
+        let out = super::lion::convert(input.as_bytes(), "shadow").expect("lion should parse");
+
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0], format!("alice:{}", vector));
+        assert!(!out[0].contains("$ml$"), "must not emit the -m 7100 shape");
+    }
 }

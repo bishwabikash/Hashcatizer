@@ -40,9 +40,14 @@ fn extract_sha512(data: &[u8]) -> Option<Vec<String>> {
     // Find 68-byte data blob (binary plist data marker 0x44 = 68 bytes)
     let idx = after.iter().position(|&b| b == 0x44)?;
     let raw = crate::common::safe_take(after, idx + 1, 68)?;
+    // SALTED-SHA512 without PBKDF2 is the 10.7 format, hashcat -m 1722, which
+    // takes the 4 byte salt and 64 byte digest as one 136 character hex string.
+    // Emitting "$ml$0$..." here borrowed the shape of -m 7100, but that mode is
+    // the 10.8+ PBKDF2 format and needs a real iteration count, so a zero there
+    // matched no mode and the hash could not be cracked.
     let salt   = to_hex(&raw[..4]);
     let digest = to_hex(&raw[4..68]);
-    Some(vec![format!("$ml$0${}${}", salt, digest)])
+    Some(vec![format!("{}{}", salt, digest)])
 }
 
 fn find_blob_after<'a>(data: &'a [u8], key: &[u8]) -> Option<&'a [u8]> {

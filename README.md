@@ -211,8 +211,8 @@ Background reading in [`docs/`](docs):
 | `pgpsda` | — | PGP Self-Decrypting Archives — no hashcat kernel |
 | `pgpwde` | — | PGP Whole Disk Encryption — no hashcat kernel |
 | `zed` | — | ZED / AxCrypt containers — no hashcat kernel |
-| `mac` | 7100 | macOS password hashes |
-| `lion` | 7100 | macOS Lion SHA-512 (emits `$ml$` form) |
+| `mac` | 7100, 1722 | macOS password hashes (10.8+ PBKDF2 / 10.7 SALTED-SHA512) |
+| `lion` | 1722 | macOS Lion (10.7) SALTED-SHA512 |
 | `pcap` | 22000, 5500, 5600 | PCAP / PCAPNG (WPA, NetNTLM) |
 | `netntlm` | 5500, 5600 | NetNTLMv1/v2 |
 | `network` | — | Network capture credential hashes |

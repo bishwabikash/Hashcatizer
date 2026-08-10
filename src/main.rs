@@ -75,7 +75,8 @@ fn hashcat_mode_hint(name: &str) -> Option<&'static str> {
         "cisco"             => Some("500/9200/9300"),
         "sap"               => Some("7700/7800"),
         "mac"               => Some("7100"),
-        "lion"              => Some("7100"),
+        // 10.7 SALTED-SHA512, emitted as the bare 136 hex char form
+        "lion"              => Some("1722"),
         "dpapimk"           => Some("15300/15900"),
         "vmx"               => Some("27400"),
         "ansible"           => Some("16900"),
@@ -115,6 +116,14 @@ fn crack_advice(name: &str, hashes: &[String]) -> Crack {
     }
     if name == "netntlm" {
         if let Some(Some(m)) = hashes.first().map(|h| converters::netntlm::classify(h)) {
+            return Crack::Hashcat(m.to_string());
+        }
+    }
+    // macOS plists carry either the 10.8+ PBKDF2 form ("$ml$<iters>$...") or
+    // the 10.7 SALTED-SHA512 form (bare hex); they are different modes.
+    if name == "mac" {
+        if let Some(h) = hashes.first() {
+            let m = if h.contains("$ml$") { "7100" } else { "1722" };
             return Crack::Hashcat(m.to_string());
         }
     }
