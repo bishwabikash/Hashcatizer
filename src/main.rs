@@ -5,6 +5,7 @@ mod common;
 mod der;
 mod detect;
 mod protobuf;
+mod zipfile;
 mod converters;
 
 // Hashcat mode hints, verified against `hashcat --example-hashes` (v7.1.2).
@@ -27,7 +28,6 @@ fn hashcat_mode_hint(name: &str) -> Option<&'static str> {
         "truecrypt"         => Some("29311-29343"),
         "veracrypt"         => Some("29411-29483"),
         "diskcryptor"       => Some("20011/20012/20013"),
-        "bestcrypt"         => Some("23900/24000"),
         "vdi"               => Some("27500/27600"),
         "luks"              => Some("14600/29511-29543"),
         "fvde"              => Some("16700"),

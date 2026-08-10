@@ -414,6 +414,60 @@ mod tests {
         }
     }
 
+
+    /// BestCrypt round-trip against John the Ripper's own test vectors.
+    ///
+    /// Each string in `bestcrypt_fmt_plug.c` was produced from a real
+    /// container, so rebuilding the DATA_BLOCK from its fields and
+    /// re-extracting proves the parser reads the offsets JtR wrote from —
+    /// the closest thing to a reference container available without the
+    /// commercial product. Covers all three hash types.
+    #[test]
+    fn bestcrypt_roundtrips_jtr_test_vectors() {
+        const VECTORS: &[&str] = &[
+        "$BestCrypt$1$5$3$16384$240$3154116612$128$32$51f7450dccbb1c947dd46138bf0d80d588b6938b02505642dde9e1ea61481485$1$a186f281fbbc68f3b27c7b4cc16b7916a2e19c2695b34ee4133a6ac6373db67b88fb54e3def1c0d288d3170dcb5860c2f190ab199fde7f1072a2a109441e608ae46890c5f18ab80803012a43d9cc595a45c5b9ed8b3ed3330cab1a29e5a96512e2f2e0e5927d6836c3a67c1cd13a61a8201a0a99be84c3e19e6d8a12330ae72c22179d37bb7d55034bb96b5cf9f73c11fa82be31d06bfe33305b616cc72079777a5f1f4a720b56470a83da08c17cbc86e34961c4f0bdb8556e2afa0b2b890780e03304725ce7cf8c592f037beb04b393f4f02e3bc9f6582082a39d31f2e643c5f7811f30eeee2ccc6c11496b7d70dc0d300e145408d28448ff5d929c42007dbe",
+        "$BestCrypt$1$5$3$16384$240$3154116612$10$64$7f36390c85bc5695d49d5d135cb09e00cbf738bb203d0f0a0181805acc15d1cc6f856af0f738c44eead724a854700700a1595b5b30d47242a277b60df6491dde$1$a5b6a69b5cb04be789b42e1f50d3426048ea0df06c3b9a9932d85bd54b99aae202c1ca2e283786a4154f09fa01014ecab7f95c3b9a9b6adab1a695153ca8bffec2408566a7da986c0f107c57404c96823bbdc18a4b11337d211b49d7a133cf951b03c54aaccf3ed9b6445e472ba508add524fb67343e954efe313f544d8ecd6f99e9731fa147c62e17a07954f4a265b43cad4247d61529a3e8760d91c5a4314238eb78e10c2521309b7b827be302a32ee37e03854a8c4f872a07fac709b6170f2e7bd9d723f65ba3fd3766c42ed4a4f8dcc55e4c3b9d4e1dcf2bc54a23a87763f4379afdd9d8e934f254f713f3ba80369f26de2c5195c5e04405acdb2893990a",
+        "$BestCrypt$1$5$3$16384$240$3154116612$129$64$06b513b2ac314636f616747c4171700133c00d335ee6a6c3a8db60bf672531624f099fa90b8047a5aceb2492c5858cab529cf9ba5d7e8c715e33517b64ef4251$1$5fc5bf3251a22f40cd23bf7a2bed453915f9037d80630d50c4c1d9d5ed3380fbf495e3013a2f1ada864afb2d4cdcc8dcaa8f86be5898bad53244d4382a42ba857420cff29b85c644c43305e9d0daf70a8db9dcaa0acc2d6b7c7e16374c30936a7d457a155ad5f6427c2818b85065eb6ab3751f91d8321ccdbfd13df038a26a01dbee887db43564588a7387e001ec5d23b22cb003a814ebb7cb4cec9b4cfd93e15bdedff0dd6dbbfff6e7fb3abf5f29ce891e3e432795600ea447c95a0900bd48d5ecc18fd6191b34dffe411412e8e8a8a8840d95cf77a51fb58248fbf940429a977f6f392cf6d1fe7b1ead0ee7ccc5264725c476b3f1fe087ffb8d811b6b2a8b",
+        ];
+
+        for expected in VECTORS {
+            let f: Vec<&str> = expected.split('$').collect();
+            let (keygen, wver): (u16, u16) = (f[3].parse().unwrap(), f[4].parse().unwrap());
+            let iterations: u32 = f[5].parse().unwrap();
+            let (alg, mode, hash_id): (u32, u32, u32) = (
+                f[6].parse().unwrap(),
+                f[7].parse().unwrap(),
+                f[8].parse().unwrap(),
+            );
+            let salt = hex::decode(f[10]).unwrap();
+            let key = hex::decode(f[12]).unwrap();
+
+            // Lay the fields back out at their DATA_BLOCK offsets.
+            let mut blk = vec![0u8; 1536 + 2560];
+            blk[3..11].copy_from_slice(b"LOCOS94 ");
+            blk[43..54].copy_from_slice(b"BC_KeyGenID");
+            blk[54..56].copy_from_slice(&keygen.to_le_bytes());
+            blk[56..58].copy_from_slice(&wver.to_le_bytes());
+            blk[58..62].copy_from_slice(&iterations.to_le_bytes());
+            blk[128..132].copy_from_slice(&alg.to_le_bytes());
+            blk[132..136].copy_from_slice(&mode.to_le_bytes());
+            blk[136..140].copy_from_slice(&hash_id.to_le_bytes());
+            // keymap: slot 0 holds the salt, slot 1 an active key.
+            blk[142..144].copy_from_slice(&5i16.to_le_bytes());
+            blk[150..152].copy_from_slice(&1i16.to_le_bytes());
+            blk[1536..1536 + salt.len()].copy_from_slice(&salt);
+            blk[1536 + 256..1536 + 256 + key.len()].copy_from_slice(&key);
+
+            let got = run("bestcrypt", &blk, "vector.jbc");
+            assert_eq!(
+                got.as_ref().and_then(|v| v.first()).map(String::as_str),
+                Some(*expected),
+                "bestcrypt did not round-trip JtR vector (hash_id {})",
+                hash_id
+            );
+        }
+    }
+
     // ---- Generic sweep: no converter may panic on malformed input ----
 
     #[test]

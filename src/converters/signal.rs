@@ -1,34 +1,32 @@
-use crate::common::to_hex;
 use std::path::Path;
+
+// Signal Desktop -> $signal$ (john).
+//
+//   $signal$1*<salt>*<encrypted key>
+//
+// Signal Desktop keeps the wrapped database key in `config.json` as hex
+// strings, which is the only layout john's extractor recognises.
+//
+// The previous implementation additionally guessed at a "binary protobuf" and a
+// "raw" layout, hex-dumping fixed byte ranges for both. Neither corresponds to
+// anything Signal writes, and because they accepted almost any input they made
+// this converter unusable in auto-detect. They are gone: if the key material is
+// not in config.json, this reports nothing rather than inventing a hash.
 
 pub fn convert(path: &Path) -> Option<Vec<String>> {
     let data = std::fs::read(path).ok()?;
-    // JSON config.json
-    if let Ok(j) = serde_json::from_slice::<serde_json::Value>(&data) {
-        if let (Some(key), Some(salt)) = (
-            j.get("encryptedKey").and_then(|v| v.as_str()),
-            j.get("salt").and_then(|v| v.as_str()),
-        ) {
-            return Some(vec![format!("$signal$1*{}*{}", salt, key)]);
-        }
+    let json: serde_json::Value = serde_json::from_slice(&data).ok()?;
+    let obj = json.as_object()?;
+
+    let key = obj.get("encryptedKey").and_then(|v| v.as_str())?;
+    let salt = obj.get("salt").and_then(|v| v.as_str())?;
+
+    if !is_hex(key) || !is_hex(salt) {
+        return None;
     }
-    // Binary protobuf
-    if data.first() == Some(&0x0a) {
-        return parse_protobuf(&data);
-    }
-    // Raw: salt at [4:36] if first 4 bytes = LE 32
-    if data.len() >= 40 && u32::from_le_bytes(data[0..4].try_into().ok()?) == 32 {
-        let salt    = to_hex(&data[4..36]);
-        let enc_key = to_hex(&data[40..data.len().min(296)]);
-        return Some(vec![format!("$signal$1*{}*{}", salt, enc_key)]);
-    }
-    None
+    Some(vec![format!("$signal$1*{}*{}", salt, key)])
 }
 
-fn parse_protobuf(data: &[u8]) -> Option<Vec<String>> {
-    let salt    = to_hex(&data[..data.len().min(32)]);
-    let iv      = to_hex(&data[32..data.len().min(44)]);
-    let enc_end = (44 + 48).min(data.len());
-    let enc     = to_hex(&data[44..enc_end]);
-    Some(vec![format!("$signal$2*{}*{}*{}", salt, iv, enc)])
+fn is_hex(s: &str) -> bool {
+    !s.is_empty() && s.len().is_multiple_of(2) && s.chars().all(|c| c.is_ascii_hexdigit())
 }
