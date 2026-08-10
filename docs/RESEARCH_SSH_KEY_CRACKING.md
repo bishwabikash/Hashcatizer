@@ -144,7 +144,8 @@ missing the *only* SSH key format still in use, and users reading
 `--example-hashes` reasonably conclude their modern keys are covered when they
 are not.
 
-**This gap is now closed in a local branch**, not yet upstream: `-m 37500`
+**This gap is now closed**, in [hashcat#4767](https://github.com/hashcat/hashcat/pull/4767)
+(open, awaiting review): `-m 37500`
 implements bcrypt-pbkdf as a real GPU kernel and recovers ed25519, RSA and
 ECDSA keys across both `aes256-ctr` and `aes256-cbc`, at the 592 H/s measured
 above. Until it is merged, Hashcatizer keeps telling the truth about stock

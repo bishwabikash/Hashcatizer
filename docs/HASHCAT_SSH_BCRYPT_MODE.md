@@ -1,7 +1,8 @@
 # Design: GPU hash mode for OpenSSH bcrypt-pbkdf private keys
 
-> **Status: implemented and working as `-m 37500`**, on a local hashcat branch,
-> not yet submitted upstream. Measured 592 H/s on an RTX 4050. Self-test passes;
+> **Status: implemented and submitted upstream as
+> [hashcat#4767](https://github.com/hashcat/hashcat/pull/4767)** (`-m 37500`,
+> open, awaiting review). Measured 592 H/s on an RTX 4050. Self-test passes;
 > ed25519 (rounds 8/16/64), RSA-2048 and ECDSA-256 recover across both
 > `aes256-ctr` and `aes256-cbc`. See [Implementation notes](#implementation-notes)
 > at the end for what the design below got wrong.
@@ -245,7 +246,7 @@ every key the GPU cracked. A wrong password neither cracks nor verifies.
 | `tools/test_modules/m37500.pm` | done, pure-Perl bcrypt-pbkdf |
 | Example hash (`ST_HASH`/`ST_PASS`) | done, real `ssh-keygen` key, self-test passes |
 | `docs/changes.txt` | done |
-| Upstream PR | not raised |
+| Upstream PR | [hashcat#4767](https://github.com/hashcat/hashcat/pull/4767), open |
 
 ### Note on upstreaming
 

@@ -22,7 +22,8 @@ actually get.
 ### 1. OpenSSH bcrypt-pbkdf private keys — highest value — **implemented**
 
 > **Built and working as `-m 37500`** on a local hashcat branch, 592 H/s on an
-> RTX 4050, not yet submitted upstream. Effort estimate below said "substantial"
+> RTX 4050, submitted as [hashcat#4767](https://github.com/hashcat/hashcat/pull/4767)
+> and awaiting review. Effort estimate below said "substantial"
 > and that was right; the two bugs that cost the most were byte-order traps in
 > hashcat's own helpers, not the algorithm. Details in
 > [HASHCAT_SSH_BCRYPT_MODE.md](HASHCAT_SSH_BCRYPT_MODE.md#implementation-notes).
@@ -58,7 +59,10 @@ handle legacy PEM keys with the MD5-based KDF.
 
 > **Fixed** on the same local branch: `module_24420.c` now strips the three
 > descriptor fields before tokenizing. Stock 7.1.2 gives "Token length
-> exception" on such a line; the patched build loads it. Not yet upstream.
+> exception" on such a line; the patched build loads it. Submitted as
+> [hashcat#4766](https://github.com/hashcat/hashcat/pull/4766), with
+> [issue #4765](https://github.com/hashcat/hashcat/issues/4765) as the
+> bug report the guidelines require. Both open.
 
 
 Current `pem2john.py` emits a self-describing variant for non-SHA1 PRFs:
