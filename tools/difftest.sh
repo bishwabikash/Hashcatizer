@@ -93,6 +93,7 @@ run pfx              pfx bundle.p12       python3 "$JTR/pfx2john.py"
 run jks              keystore keystore.jks python3 "$JTR/keystore2john.py"
 run ansible          ansible ansible_vault.yml python3 "$JTR/ansible2john.py"
 run openssl-enc      openssl openssl_enc.bin   python3 "$JTR/openssl2john.py"
+run staroffice       staroffice test.sxc      python3 "$JTR/staroffice2john.py"
 
 echo
 printf 'pass %d   fail %d   skip %d\n' "$pass" "$fail" "$skip"

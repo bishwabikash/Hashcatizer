@@ -8,6 +8,7 @@
 # Usage: tools/make_fixtures.sh [output-dir]
 
 set -u
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT="${1:-fixtures}"
 PASS="hashcat1"
 mkdir -p "$OUT"
@@ -133,6 +134,13 @@ blob = binascii.hexlify(body).decode()
 lines = [blob[i:i+80] for i in range(0, len(blob), 80)]
 open('ansible_vault.yml','w').write("$ANSIBLE_VAULT;1.1;AES256\n" + "\n".join(lines) + "\n")
 PY
+
+# --- StarOffice / early OpenOffice ------------------------------------------
+if python3 "$SCRIPT_DIR/make_sxc_fixture.py" test.sxc 2>/dev/null; then
+  note staroffice "ok"
+else
+  note staroffice "SKIP"
+fi
 
 echo
 echo "Fixtures:"
